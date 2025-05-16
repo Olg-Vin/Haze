@@ -1,4 +1,4 @@
-package com.vinio.haze
+package com.vinio.haze.presentation.map
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -47,7 +47,7 @@ class YandexMapViewModel : ViewModel() {
         }
     }
 
-    fun searchInViewport(boundingBox: BoundingBox) {
+    private fun searchInViewport(boundingBox: BoundingBox) {
         Log.d("Search", "Ищем POI в bbox: ${boundingBox.toFormatString()}")
         currentSession?.cancel()
 

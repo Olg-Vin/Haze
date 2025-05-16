@@ -1,4 +1,4 @@
-package com.vinio.haze
+package com.vinio.haze.presentation.map
 
 import android.util.Log
 import android.widget.Toast
@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.vinio.haze.R
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
@@ -23,7 +25,7 @@ import com.yandex.runtime.image.ImageProvider
 @Composable
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
-    viewModel: YandexMapViewModel = remember { YandexMapViewModel() }
+    viewModel: YandexMapViewModel = hiltViewModel<YandexMapViewModel>()
 ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()

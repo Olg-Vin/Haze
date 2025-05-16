@@ -4,7 +4,9 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.util.Log
 import com.yandex.mapkit.MapKitFactory
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()

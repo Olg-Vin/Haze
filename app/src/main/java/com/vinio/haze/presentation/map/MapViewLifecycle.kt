@@ -1,4 +1,4 @@
-package com.vinio.haze
+package com.vinio.haze.presentation.map
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect

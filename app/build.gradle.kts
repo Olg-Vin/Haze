@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
+    kotlin("plugin.serialization") version "2.1.20"
 }
 
 android {
@@ -54,6 +57,33 @@ android {
 dependencies {
 //    Map
     implementation(libs.maps.mobile)
+
+//    Compose Navigation
+    implementation(libs.androidx.navigation.compose)
+
+//    Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+
+//    Ktor
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.kotlinx.serialization.json)
+
+//    Location
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.play.services.location)
+    implementation(libs.jts.core)
+
+//    Hilt
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.runtime.livedata)
+    ksp(libs.hilt.compiler)
+    implementation(libs.kotlinx.metadata.jvm)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
