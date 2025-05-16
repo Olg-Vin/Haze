@@ -3,8 +3,8 @@ package com.vinio.haze.presentation.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import com.vinio.haze.presentation.diAndUtils.hasLocationPermission
-import com.vinio.haze.presentation.diAndUtils.hasNotificationPermission
+import com.vinio.haze.diAndUtils.hasLocationPermission
+import com.vinio.haze.diAndUtils.hasNotificationPermission
 
 
 /**

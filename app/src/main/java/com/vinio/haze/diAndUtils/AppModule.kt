@@ -1,4 +1,4 @@
-package com.vinio.haze.presentation.diAndUtils
+package com.vinio.haze.diAndUtils
 
 import com.vinio.haze.presentation.map.YandexMapViewModel
 import dagger.Module

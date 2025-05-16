@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.vinio.haze.R
-import com.vinio.haze.presentation.diAndUtils.openAppSettings
+import com.vinio.haze.diAndUtils.openAppSettings
 
 @Composable
 fun StartScreen(onPermissionsGranted: () -> Unit) {

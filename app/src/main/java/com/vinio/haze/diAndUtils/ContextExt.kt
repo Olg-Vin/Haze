@@ -1,4 +1,4 @@
-package com.vinio.haze.presentation.diAndUtils
+package com.vinio.haze.diAndUtils
 
 import android.Manifest
 import android.content.Context
