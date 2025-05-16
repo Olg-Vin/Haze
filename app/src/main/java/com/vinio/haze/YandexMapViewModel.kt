@@ -1,9 +1,6 @@
 package com.vinio.haze
 
-import android.annotation.SuppressLint
-import android.app.Application
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yandex.mapkit.GeoObjectCollection.Item
@@ -24,7 +21,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 @OptIn(FlowPreview::class)
-class YandexMapViewModel: ViewModel() {
+class YandexMapViewModel : ViewModel() {
     private val searchManager =
         SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE)
 
@@ -38,17 +35,20 @@ class YandexMapViewModel: ViewModel() {
     init {
         viewModelScope.launch {
             _boundingBoxFlow
-                .debounce(500) // 500мс
+                .debounce(500)
                 .collect { bbox -> searchInViewport(bbox) }
         }
     }
 
     fun requestSearch(bbox: BoundingBox) {
-        _boundingBoxFlow.tryEmit(bbox)
+        Log.d("Search", "Requesting search with bbox: ${bbox.toFormatString()}")
+        viewModelScope.launch {
+            _boundingBoxFlow.emit(bbox)
+        }
     }
 
     fun searchInViewport(boundingBox: BoundingBox) {
-        Log.d("Search", "Ищем POI в bbox: $boundingBox")
+        Log.d("Search", "Ищем POI в bbox: ${boundingBox.toFormatString()}")
         currentSession?.cancel()
 
         val options = SearchOptions().apply {
@@ -62,7 +62,9 @@ class YandexMapViewModel: ViewModel() {
             options,
             object : Session.SearchListener {
                 override fun onSearchResponse(response: Response) {
+                    Log.d("SearchDebug", "response: ${response.collection.children.size}")
                     _poiItems.value = response.collection.children
+                    Log.d("SearchDebug", "${_poiItems.value}")
                 }
 
                 override fun onSearchError(error: Error) {

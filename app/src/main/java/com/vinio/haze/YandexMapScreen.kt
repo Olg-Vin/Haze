@@ -4,7 +4,12 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -13,13 +18,12 @@ import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.MapType
-import com.yandex.mapkit.mapview.MapView
 import com.yandex.runtime.image.ImageProvider
 
 @Composable
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
-    viewModel: YandexMapViewModel = YandexMapViewModel()
+    viewModel: YandexMapViewModel = remember { YandexMapViewModel() }
 ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
@@ -57,9 +61,11 @@ fun YandexMapScreen(
         poiItems.forEach { item ->
             val point = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
             val name = item.obj?.name.orEmpty()
-            val placemark = placemarkCollection.addPlacemark(point)
-            placemark.setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
-            placemark.userData = name
+            placemarkCollection.addPlacemark().apply {
+                geometry = point
+                setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
+                userData = name
+            }
         }
 
         placemarkCollection.addTapListener { obj, _ ->
@@ -71,7 +77,7 @@ fun YandexMapScreen(
 
     // Слушаем перемещение камеры и перезапускаем поиск
     DisposableEffect(mapView) {
-        val listener = com.yandex.mapkit.map.CameraListener { _, _, _, finished ->
+        val listener = com.yandex.mapkit.map.CameraListener { map, pos, update, finished ->
             if (finished) {
                 val region = mapView.mapWindow.map.visibleRegion
                 val bbox = BoundingBox(region.bottomLeft, region.topRight)
@@ -82,8 +88,13 @@ fun YandexMapScreen(
         mapView.mapWindow.map.addCameraListener(listener)
 
         onDispose {
+            Log.d("MapDebug", "CameraListener was removed")
             mapView.mapWindow.map.removeCameraListener(listener)
         }
     }
 }
 
+fun BoundingBox.toFormatString(): String {
+    return "southWest: ${this.southWest.latitude}, ${this.southWest.longitude}\n" +
+            "northEast: ${this.northEast.latitude}, ${this.northEast.longitude}"
+}
