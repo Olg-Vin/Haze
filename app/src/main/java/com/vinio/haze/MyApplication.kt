@@ -11,7 +11,6 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         val apiKey = getMetaDataValue("com.yandex.android.maps.apikey")
-        Log.d("MyApplication", "Yandex API key: $apiKey")
 
         MapKitFactory.setLocale("ru_RU")
         MapKitFactory.setApiKey(apiKey)

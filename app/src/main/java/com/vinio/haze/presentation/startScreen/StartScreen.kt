@@ -54,7 +54,7 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
             add(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
-
+//  TODO  добавити уведомления как обязательное разрешение
     val permissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
