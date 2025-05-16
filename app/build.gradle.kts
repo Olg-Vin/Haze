@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,12 +12,22 @@ android {
 
     defaultConfig {
         applicationId = "com.vinio.haze"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProperties = File(rootProject.projectDir, "local.properties")
+        val properties = Properties().apply {
+            if (localProperties.exists()) {
+                load(localProperties.inputStream())
+            }
+        }
+        val mapsApiKey = properties.getProperty("MAPS_API_KEY") ?: ""
+
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -40,6 +52,8 @@ android {
 }
 
 dependencies {
+//    Map
+    implementation(libs.maps.mobile)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
