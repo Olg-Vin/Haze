@@ -17,6 +17,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
+/*
 suspend fun getAIResponse(lat: Double, lon: Double, name: String): String {
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -65,9 +66,11 @@ suspend fun getAIResponse(lat: Double, lon: Double, name: String): String {
         client.close()
     }
 }
+*/
 
 
 
+/*
 @Serializable
 data class ChatMessage(val role: String, val content: String)
 
@@ -86,4 +89,4 @@ data class ChatChoice(
 @Serializable
 data class ChatResponse(
     val choices: List<ChatChoice>
-)
+)*/

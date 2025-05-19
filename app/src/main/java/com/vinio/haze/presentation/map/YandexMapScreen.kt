@@ -25,6 +25,8 @@ import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.IconStyle
 import com.yandex.mapkit.map.MapType
+import com.yandex.mapkit.search.BusinessObjectMetadata
+import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
 
 @Composable
@@ -76,10 +78,29 @@ fun YandexMapScreen(
         }
         //  заполняем коллекцию меток полученными объектами
         poiItems.forEach { item ->
+
+            val metadata = item.obj?.metadataContainer
+
+            val toponym = metadata?.getItem(ToponymObjectMetadata::class.java)
+            val toponymAddress = toponym?.address?.formattedAddress
+            if (toponymAddress != null) {
+                Log.d("MetaDebug", "Toponym Address: $toponymAddress")
+            }
+
+            val business = metadata?.getItem(BusinessObjectMetadata::class.java)
+            val businessAddress = business?.address?.formattedAddress
+            if (business != null) {
+                Log.d("MetaDebug", "Business Name: ${business.name}")
+                Log.d("MetaDebug", "Business Address: $businessAddress")
+            }
+
+            val address = businessAddress ?: toponymAddress
+
             val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
             val point = Point(geometryPoint.latitude, geometryPoint.longitude)
             val name = item.obj?.name?.toString().orEmpty()
-            val place = Place(name, null, point.latitude, point.longitude)
+            val place = Place(name, address, null, point.latitude, point.longitude)
+
             placemarkCollection.addPlacemark().apply {
                 geometry = point
                 setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
