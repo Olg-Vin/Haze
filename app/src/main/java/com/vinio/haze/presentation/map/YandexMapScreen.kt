@@ -34,6 +34,7 @@ import com.yandex.mapkit.search.BusinessObjectMetadata
 import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun YandexMapScreen(
@@ -45,6 +46,18 @@ fun YandexMapScreen(
     val poiItems by viewModel.poiItems.collectAsState()
     val zoom by viewModel.zoomLevel.collectAsState()
     val userLocation by viewModel.userLocation.collectAsState()
+    var selectedPlace by remember { mutableStateOf<Place?>(null) }
+
+    val poiCollection = remember {
+        mapView.mapWindow.map.mapObjects.addCollection().apply {
+            addTapListener { mapObject, _ ->
+                val place = mapObject.userData as? Place ?: return@addTapListener false
+                Toast.makeText(context, place.name, Toast.LENGTH_SHORT).show()
+                selectedPlace = place
+                true
+            }
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -66,16 +79,11 @@ fun YandexMapScreen(
         viewModel.requestSearch(bbox)
     }
 
-    var selectedPlace by remember { mutableStateOf<Place?>(null) }
+
 
     // Обновление маркеров при новых POI
-    LaunchedEffect(poiItems) {
-        val map = mapView.mapWindow.map
-        val rootCollection = map.mapObjects
-        rootCollection.clear()
-        val placemarkCollection = rootCollection.addCollection()
-
-        Log.d("MapDebug", "Placing ${poiItems.size} placemarks")
+    LaunchedEffect(poiItems, zoom) {
+        poiCollection.clear()
 
         val scale = when {
             zoom >= 17 -> 1.0f
@@ -83,47 +91,46 @@ fun YandexMapScreen(
             zoom >= 13 -> 0.6f
             else -> 0.4f
         }
-        //  заполняем коллекцию меток полученными объектами
-        poiItems.forEach { item ->
 
-            val metadata = item.obj?.metadataContainer
+        poiItems.forEachIndexed { index, item ->
 
-            val toponym = metadata?.getItem(ToponymObjectMetadata::class.java)
-            val toponymAddress = toponym?.address?.formattedAddress
-            if (toponymAddress != null) {
-                Log.d("MetaDebug", "Toponym Address: $toponymAddress")
-            }
-
-            val business = metadata?.getItem(BusinessObjectMetadata::class.java)
-            val businessAddress = business?.address?.formattedAddress
-            if (business != null) {
-                Log.d("MetaDebug", "Business Name: ${business.name}")
-                Log.d("MetaDebug", "Business Address: $businessAddress")
-            }
-
-            val address = businessAddress ?: toponymAddress
-
-            val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
+            val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEachIndexed
             val point = Point(geometryPoint.latitude, geometryPoint.longitude)
             val name = item.obj?.name?.toString().orEmpty()
+
+            val metadata = item.obj?.metadataContainer
+            val toponymAddress = metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
+            val business = metadata?.getItem(BusinessObjectMetadata::class.java)
+            val businessAddress = business?.address?.formattedAddress
+            val address = businessAddress ?: toponymAddress
+
             val place = Place(name, address, null, point.latitude, point.longitude)
 
-            placemarkCollection.addPlacemark().apply {
-                geometry = point
+            val placemark = poiCollection.addPlacemark(point).apply {
                 setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
                 userData = place
                 setIconStyle(IconStyle().apply {
-                    this.scale = scale
-                    this.anchor?.set(0.5f, 1.0f)
+                    setScale(0f) // начинаем с 0, чтобы анимировать появление
+                    anchor?.set(0.5f, 1.0f)
                 })
             }
-        }
-        //  для каждого элемента коллекции создаём слушатель тапов
-        placemarkCollection.addTapListener { mapObject, _ ->
-            val place = mapObject.userData as? Place ?: return@addTapListener false
-            Toast.makeText(context, place.name, Toast.LENGTH_SHORT).show()
-            selectedPlace = place
-            true
+
+            // Плавная анимация появления с задержкой по индексу, чтобы POI появлялись постепенно
+            launch {
+                val steps = 10
+                repeat(steps) { step ->
+                    placemark.setIconStyle(IconStyle().apply {
+                        setScale((step + 1) / steps.toFloat() * scale)
+                        anchor?.set(0.5f, 1.0f)
+                    })
+                    delay(16L) // ~60fps
+                }
+                // Убедимся, что масштаб установлен в конечное значение
+                placemark.setIconStyle(IconStyle().apply {
+                    setScale(scale)
+                    anchor?.set(0.5f, 1.0f)
+                })
+            }
         }
     }
 
