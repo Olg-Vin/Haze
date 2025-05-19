@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.kotlinx.serialization.json)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
 //    Location
     implementation(libs.androidx.lifecycle.livedata.ktx)

@@ -1,22 +1,25 @@
 package com.vinio.haze.infrastructure
 
-import android.util.Log
+
 import com.vinio.haze.domain.AiRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.sse.SSE
+import io.ktor.client.plugins.sse.sse
 import io.ktor.client.request.post
-import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.content.TextContent
 import io.ktor.http.contentType
+import io.ktor.http.headers
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -93,64 +96,60 @@ class AiRequestImpl @Inject constructor() : AiRequest {
             install(HttpTimeout) {
                 requestTimeoutMillis = 180_000
             }
+            install(SSE)
         }
 
-        val request = ChatRequest(
-            model = "mistral-7b-instruct-v0.3",
-            stream = true,
-            messages = listOf(
-                ChatMessage(
-                    role = "user",
-                    content = """Дай краткое описание места "$name широта:$lat, долгота:$lon""""
+        val jsonBody = Json.encodeToString(
+            ChatRequest.serializer(), ChatRequest(
+                model = "mistral-7b-instruct-v0.3",
+                stream = true,
+                messages = listOf(
+                    ChatMessage(
+                        role = "user",
+                        content = "Дай краткое описание места \"$name\" (широта: $lat, долгота: $lon)"
+                    )
                 )
             )
         )
 
-        Log.d("AiRequest", "request: $request")
-
-        try {
-            val jsonRequest = Json.encodeToString(ChatRequest.serializer(), request)
-            Log.d("AiRequest", "Serialized request JSON: $jsonRequest")
-            val response = client.request("http://10.0.2.2:1234/v1/chat/completions") {
+        client.sse(
+            urlString = "http://10.0.2.2:1234/v1/chat/completions",
+            request = {
                 method = HttpMethod.Post
-                contentType(ContentType.Application.Json)
-                setBody(request)
+                headers {
+                    append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    append("Content-Type", "application/json")
+                    append("Accept", "text/event-stream")
+                }
+//                setBody(jsonBody)
+                setBody(TextContent(jsonBody, ContentType.Application.Json))
+
             }
-
-            Log.d("AiRequest", "Response status: ${response.status}")
-            Log.d("AiRequest", "Response headers: ${response.headers}")
-
-            val channel = response.bodyAsChannel()
-
-            while (!channel.isClosedForRead) {
-                val line = channel.readUTF8Line() ?: break
-                Log.d("AiRequest", "Received line: $line")
-                if (line.isBlank()) continue
-
-                if (line.startsWith("data: ")) {
-                    val jsonPart = line.removePrefix("data: ").trim()
-                    if (jsonPart == "[DONE]") break
-
-                    val element = Json.parseToJsonElement(jsonPart).jsonObject
-                    val deltaContent = element["choices"]
+        ) {
+            incoming.collect { event ->
+                if (event.data == "[DONE]") return@collect
+                try {
+                    val json =
+                        event.data?.let { Json.parseToJsonElement(it).jsonObject }
+                    val delta = json?.get("choices")
                         ?.jsonArray?.get(0)
                         ?.jsonObject?.get("delta")
                         ?.jsonObject?.get("content")
                         ?.jsonPrimitive
                         ?.contentOrNull
 
-                    if (!deltaContent.isNullOrEmpty()) {
-                        Log.d("AiRequest", "Emitting token: $deltaContent")
-                        emit(deltaContent) // emit token to flow
+                    if (!delta.isNullOrEmpty()) {
+                        emit(delta)
                     }
+                } catch (e: Exception) {
+                    emit("[Ошибка парсинга: ${e.localizedMessage}]")
                 }
             }
-        } catch (e: Exception) {
-            emit("\n[Ошибка: ${e.localizedMessage}]")
-        } finally {
-            client.close()
         }
+    }.catch { e ->
+        emit("[Ошибка: ${e.localizedMessage}]")
     }
+
 }
 
 @Serializable
