@@ -21,6 +21,8 @@
         android:theme="@style/Theme.Haze"
         tools:targetApi="31">
 
+        <service android:name=".domain.LocationService" android:foregroundServiceType="location"/>
+
         <meta-data
             android:name="com.yandex.android.maps.apikey"
             android:value="${MAPS_API_KEY}"/>

@@ -1,5 +1,6 @@
 package com.vinio.haze.presentation.map
 
+import android.app.Activity
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -20,24 +22,29 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.vinio.haze.R
 import com.vinio.haze.domain.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
+import com.vinio.haze.startLocation
+import com.yandex.mapkit.Animation
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.IconStyle
 import com.yandex.mapkit.map.MapType
+import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.search.BusinessObjectMetadata
 import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
+import kotlinx.coroutines.delay
 
 @Composable
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
-    viewModel: YandexMapViewModel = hiltViewModel<YandexMapViewModel>()
+    viewModel: YandexMapViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
     val poiItems by viewModel.poiItems.collectAsState()
     val zoom by viewModel.zoomLevel.collectAsState()
+    val userLocation by viewModel.userLocation.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -124,8 +131,40 @@ fun YandexMapScreen(
         PoiInfoDialog(place = place, onDismiss = { selectedPlace = null })
     }
 
+    var userPlacemark by remember { mutableStateOf<PlacemarkMapObject?>(null) }
+    val userPlacemarkState = remember { mutableStateOf<PlacemarkMapObject?>(null) }
+
+
+    LaunchedEffect(userLocation) {
+        userLocation?.let { point ->
+            val placemark = userPlacemarkState.value
+            if (placemark == null || !placemark.isValid) {
+                val newPlacemark = mapView.mapWindow.map.mapObjects.addPlacemark(point).apply {
+                    setIcon(ImageProvider.fromResource(context, R.drawable.ic_user_location))
+                    setIconStyle(IconStyle().apply {
+                        scale = 1.0f
+                        anchor?.set(0.5f, 0.5f)
+                    })
+                }
+                userPlacemarkState.value = newPlacemark
+            } else {
+                // Анимация перемещения
+                animatePlacemarkMove(placemark, point)
+            }
+
+            mapView.mapWindow.map.move(
+                CameraPosition(point, zoom, 0f, 0f),
+                Animation(Animation.Type.SMOOTH, 1.0f),
+                null
+            )
+        }
+    }
+
+
+
     // Слушаем перемещение камеры и перезапускаем поиск
     DisposableEffect(mapView) {
+        (context as? Activity)?.startLocation()
         val listener = com.yandex.mapkit.map.CameraListener { map, cameraPosition, update, finished ->
             if (finished) {
                 val zoom = cameraPosition.zoom
@@ -149,4 +188,20 @@ fun YandexMapScreen(
 fun BoundingBox.toFormatString(): String {
     return "southWest: ${this.southWest.latitude}, ${this.southWest.longitude}\n" +
             "northEast: ${this.northEast.latitude}, ${this.northEast.longitude}"
+}
+
+private fun lerp(start: Double, end: Double, fraction: Float): Double =
+    start + (end - start) * fraction
+
+private suspend fun animatePlacemarkMove(placemark: PlacemarkMapObject, target: Point) {
+    if (!placemark.isValid) return
+    val start = placemark.geometry
+    repeat(20) { step ->
+        val t = (step + 1) / 20f
+        placemark.geometry = Point(
+            lerp(start.latitude, target.latitude, t),
+            lerp(start.longitude, target.longitude, t)
+        )
+        delay(16)
+    }
 }

@@ -1,8 +1,10 @@
 package com.vinio.haze
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
 import com.yandex.mapkit.MapKitFactory
 import dagger.hilt.android.HiltAndroidApp
 
@@ -15,6 +17,15 @@ class MyApplication : Application() {
         MapKitFactory.setLocale("ru_RU")
         MapKitFactory.setApiKey(apiKey)
         MapKitFactory.initialize(this)
+
+        val channel = NotificationChannel(
+            "location",
+            "Location",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun getMetaDataValue(name: String): String {
