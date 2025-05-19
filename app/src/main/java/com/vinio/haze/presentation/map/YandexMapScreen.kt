@@ -9,12 +9,17 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vinio.haze.R
+import com.vinio.haze.domain.Place
+import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.map.CameraPosition
@@ -52,6 +57,8 @@ fun YandexMapScreen(
         viewModel.requestSearch(bbox)
     }
 
+    var selectedPlace by remember { mutableStateOf<Place?>(null) }
+
     // Обновление маркеров при новых POI
     LaunchedEffect(poiItems) {
         val map = mapView.mapWindow.map
@@ -67,26 +74,33 @@ fun YandexMapScreen(
             zoom >= 13 -> 0.6f
             else -> 0.4f
         }
-
+        //  заполняем коллекцию меток полученными объектами
         poiItems.forEach { item ->
-            val point = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
-            val name = item.obj?.name.orEmpty()
+            val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
+            val point = Point(geometryPoint.latitude, geometryPoint.longitude)
+            val name = item.obj?.name?.toString().orEmpty()
+            val place = Place(name, null, point.latitude, point.longitude)
             placemarkCollection.addPlacemark().apply {
                 geometry = point
                 setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
-                userData = name
+                userData = place
                 setIconStyle(IconStyle().apply {
                     this.scale = scale
                     this.anchor?.set(0.5f, 1.0f)
                 })
             }
         }
-
-        placemarkCollection.addTapListener { obj, _ ->
-            val name = obj.userData as? String ?: return@addTapListener false
-            Toast.makeText(context, name, Toast.LENGTH_SHORT).show()
+        //  для каждого элемента коллекции создаём слушатель тапов
+        placemarkCollection.addTapListener { mapObject, _ ->
+            val place = mapObject.userData as? Place ?: return@addTapListener false
+            Toast.makeText(context, place.name, Toast.LENGTH_SHORT).show()
+            selectedPlace = place
             true
         }
+    }
+
+    selectedPlace?.let { place ->
+        PoiInfoDialog(place = place, onDismiss = { selectedPlace = null })
     }
 
     // Слушаем перемещение камеры и перезапускаем поиск

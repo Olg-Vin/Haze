@@ -1,6 +1,9 @@
 package com.vinio.haze.diAndUtils
 
+import com.vinio.haze.domain.AiRequest
+import com.vinio.haze.infrastructure.AiRequestImpl
 import com.vinio.haze.presentation.map.YandexMapViewModel
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,6 +17,12 @@ object AppModule {
     @Singleton
     fun provideMapViewModel(): YandexMapViewModel {
         return YandexMapViewModel()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAiRequest(): AiRequest {
+        return AiRequestImpl()
     }
 }
 
