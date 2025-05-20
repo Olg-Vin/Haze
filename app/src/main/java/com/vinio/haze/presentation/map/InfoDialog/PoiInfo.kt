@@ -1,6 +1,5 @@
 package com.vinio.haze.presentation.map.InfoDialog
 
-import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,7 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vinio.haze.domain.Place
+import com.vinio.haze.domain.model.Place
 import kotlinx.coroutines.delay
 
 @Composable

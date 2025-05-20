@@ -1,4 +1,4 @@
-package com.vinio.haze.domain
+package com.vinio.haze.domain.location
 
 import android.location.Location
 import kotlinx.coroutines.flow.Flow

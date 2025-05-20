@@ -1,4 +1,4 @@
-package com.vinio.haze.domain
+package com.vinio.haze.domain.location
 
 
 import android.app.NotificationManager
@@ -11,7 +11,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.LocationServices
 import com.vinio.haze.R
-import com.vinio.haze.infrastructure.DefaultLocationClient
+import com.vinio.haze.infrastructure.location.DefaultLocationClient
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -1,4 +1,4 @@
-package com.vinio.haze.domain
+package com.vinio.haze.domain.ai
 
 import kotlinx.coroutines.flow.Flow
 

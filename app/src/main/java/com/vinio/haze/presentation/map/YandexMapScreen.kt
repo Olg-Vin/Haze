@@ -21,7 +21,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vinio.haze.R
-import com.vinio.haze.domain.Place
+import com.vinio.haze.domain.model.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
 import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
@@ -39,7 +39,6 @@ import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.operation.union.CascadedPolygonUnion
@@ -50,13 +49,14 @@ val geometryFactory = GeometryFactory()
 @Composable
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
-    viewModel: YandexMapViewModel = hiltViewModel()
+    viewModel: YandexMapViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
     val poiItems by viewModel.poiItems.collectAsState()
     val zoom by viewModel.zoomLevel.collectAsState()
     val userLocation by viewModel.userLocation.collectAsState()
+    val userPlacemarkState = remember { mutableStateOf<PlacemarkMapObject?>(null) }
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
 
     val poiCollection = remember {
@@ -69,11 +69,10 @@ fun YandexMapScreen(
             }
         }
     }
-    // Работа с туманов
+
     val fogCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
     var fogPolygonObj by remember { mutableStateOf<PolygonMapObject?>(null) }
     val visibleAreas = remember { mutableStateListOf<LinearRing>() }
-
     val worldOuterRing = remember {
         LinearRing(
             listOf(
@@ -85,6 +84,7 @@ fun YandexMapScreen(
             )
         )
     }
+    val locationPoints by viewModel.locationPoints.observeAsState(emptyList())
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -95,30 +95,46 @@ fun YandexMapScreen(
         )
     }
 
-    // Переместим камеру и выполним первичный поиск один раз
     LaunchedEffect(Unit) {
         mapView.mapWindow.map.mapType = MapType.MAP
-        val target = Point(55.751225, 37.62954)
-        mapView.mapWindow.map.move(CameraPosition(target, 17.0f, 0.0f, 0.0f))
+        viewModel.loadLocationPoints()
 
         val region = mapView.mapWindow.map.visibleRegion
         val bbox = BoundingBox(region.bottomLeft, region.topRight)
         viewModel.requestSearch(bbox)
 
-        // Инициализируем полигон
         fogPolygonObj = fogCollection.addPolygon(
             Polygon(worldOuterRing, visibleAreas.toList())
         ).apply {
             fillColor = 0xF0000000.toInt() // тёмный полупрозрачный
             strokeColor = 0x00000000.toInt()
             strokeWidth = 0f
-            zIndex = 1f
+            zIndex = 0f
         }
     }
 
+    LaunchedEffect(locationPoints, fogPolygonObj) {
+        if (locationPoints.isNotEmpty() && fogPolygonObj != null) {
+            val polygons = locationPoints.map { point ->
+                makeSquarePolygon(Point(point.cellLat, point.cellLon))
+            }
 
+            val union = CascadedPolygonUnion.union(polygons)
 
-    // Обновление маркеров при новых POI
+            visibleAreas.clear()
+            when (union) {
+                is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union))
+                is org.locationtech.jts.geom.MultiPolygon -> {
+                    for (i in 0 until union.numGeometries) {
+                        visibleAreas.add(fromJtsPolygon(union.getGeometryN(i) as JtsPolygon))
+                    }
+                }
+            }
+
+            updateFogPolygon(fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList()))
+        }
+    }
+
     LaunchedEffect(poiItems, zoom) {
         poiCollection.clear()
 
@@ -136,7 +152,8 @@ fun YandexMapScreen(
             val name = item.obj?.name?.toString().orEmpty()
 
             val metadata = item.obj?.metadataContainer
-            val toponymAddress = metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
+            val toponymAddress =
+                metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
             val business = metadata?.getItem(BusinessObjectMetadata::class.java)
             val businessAddress = business?.address?.formattedAddress
             val address = businessAddress ?: toponymAddress
@@ -151,8 +168,6 @@ fun YandexMapScreen(
                     anchor?.set(0.5f, 1.0f)
                 })
             }
-
-            // Плавная анимация появления с задержкой по индексу, чтобы POI появлялись постепенно
             launch {
                 val steps = 10
                 repeat(steps) { step ->
@@ -162,7 +177,6 @@ fun YandexMapScreen(
                     })
                     delay(16L) // ~60fps
                 }
-                // Убедимся, что масштаб установлен в конечное значение
                 placemark.setIconStyle(IconStyle().apply {
                     setScale(scale)
                     anchor?.set(0.5f, 1.0f)
@@ -174,10 +188,6 @@ fun YandexMapScreen(
     selectedPlace?.let { place ->
         PoiInfoDialog(place = place, onDismiss = { selectedPlace = null })
     }
-
-    var userPlacemark by remember { mutableStateOf<PlacemarkMapObject?>(null) }
-    val userPlacemarkState = remember { mutableStateOf<PlacemarkMapObject?>(null) }
-
 
     LaunchedEffect(userLocation) {
         userLocation?.let { point ->
@@ -192,7 +202,6 @@ fun YandexMapScreen(
                 }
                 userPlacemarkState.value = newPlacemark
             } else {
-                // Анимация перемещения
                 animatePlacemarkMove(placemark, point)
             }
 
@@ -203,7 +212,8 @@ fun YandexMapScreen(
             )
 
             val newPolygon = makeSquarePolygon(point)
-            val union = CascadedPolygonUnion.union(listOf(newPolygon) + visibleAreas.map { toJtsPolygon(it.points) })
+            val union =
+                CascadedPolygonUnion.union(listOf(newPolygon) + visibleAreas.map { toJtsPolygon(it.points) })
 
             visibleAreas.clear()
             when (union) {
@@ -214,26 +224,24 @@ fun YandexMapScreen(
                     }
                 }
             }
-
             updateFogPolygon(fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList()))
         }
     }
 
-
-
     // Слушаем перемещение камеры и перезапускаем поиск
     DisposableEffect(mapView) {
         (context as? Activity)?.startLocation()
-        val listener = com.yandex.mapkit.map.CameraListener { map, cameraPosition, update, finished ->
-            if (finished) {
-                val zoom = cameraPosition.zoom
-                viewModel.onZoomChanged(zoom)
+        val listener =
+            com.yandex.mapkit.map.CameraListener { map, cameraPosition, update, finished ->
+                if (finished) {
+                    val zoom = cameraPosition.zoom
+                    viewModel.onZoomChanged(zoom)
 
-                val region = mapView.mapWindow.map.visibleRegion
-                val bbox = BoundingBox(region.bottomLeft, region.topRight)
-                viewModel.requestSearch(bbox)
+                    val region = mapView.mapWindow.map.visibleRegion
+                    val bbox = BoundingBox(region.bottomLeft, region.topRight)
+                    viewModel.requestSearch(bbox)
+                }
             }
-        }
 
         mapView.mapWindow.map.addCameraListener(listener)
 

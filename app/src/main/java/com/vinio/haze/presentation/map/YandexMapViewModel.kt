@@ -1,24 +1,17 @@
 package com.vinio.haze.presentation.map
 
-import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vinio.haze.domain.LocationClient
-import com.vinio.haze.domain.LocationRepository
-import com.vinio.haze.infrastructure.DefaultLocationClient
+import com.vinio.haze.domain.location.LocationRepository
+import com.vinio.haze.domain.model.LocationPoint
+import com.vinio.haze.domain.repository.LocationPointRepository
 import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Geometry
 import com.yandex.mapkit.geometry.Point
-import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.search.Response
 import com.yandex.mapkit.search.SearchFactory
 import com.yandex.mapkit.search.SearchManagerType
@@ -28,7 +21,6 @@ import com.yandex.mapkit.search.Session
 import com.yandex.runtime.Error
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,11 +28,16 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.operation.union.CascadedPolygonUnion
+import org.locationtech.jts.geom.Polygon as JtsPolygon
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class YandexMapViewModel @Inject constructor(
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val repository: LocationPointRepository
 ) : ViewModel() {
     private val searchManager =
         SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE)
@@ -60,6 +57,15 @@ class YandexMapViewModel @Inject constructor(
     private val _userLocation = MutableStateFlow<Point?>(null)
     val userLocation: StateFlow<Point?> = _userLocation
 
+    private val _locationPoints = MutableLiveData<List<LocationPoint>>(emptyList())
+    val locationPoints: LiveData<List<LocationPoint>> = _locationPoints
+
+    fun loadLocationPoints() {
+        viewModelScope.launch {
+            val pointsFromDb = repository.getAllLocationPoints()
+            _locationPoints.postValue(pointsFromDb)
+        }
+    }
 
     fun onZoomChanged(zoom: Float) {
         _zoomLevel.value = zoom

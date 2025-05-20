@@ -1,4 +1,4 @@
-package com.vinio.haze.infrastructure
+package com.vinio.haze.infrastructure.location
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -13,7 +13,7 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.Priority
-import com.vinio.haze.domain.LocationClient
+import com.vinio.haze.domain.location.LocationClient
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

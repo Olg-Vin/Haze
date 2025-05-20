@@ -7,7 +7,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.vinio.haze.domain.LocationService
+import com.vinio.haze.domain.location.LocationService
 import com.vinio.haze.ui.theme.HazeTheme
 import com.vinio.haze.presentation.navigation.AppNavigation
 import com.yandex.mapkit.MapKitFactory
