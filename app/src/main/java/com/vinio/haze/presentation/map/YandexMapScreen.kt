@@ -58,17 +58,7 @@ fun YandexMapScreen(
     val userLocation by viewModel.userLocation.collectAsState()
     val userPlacemarkState = remember { mutableStateOf<PlacemarkMapObject?>(null) }
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
-
-    val poiCollection = remember {
-        mapView.mapWindow.map.mapObjects.addCollection().apply {
-            addTapListener { mapObject, _ ->
-                val place = mapObject.userData as? Place ?: return@addTapListener false
-                Toast.makeText(context, place.name, Toast.LENGTH_SHORT).show()
-                selectedPlace = place
-                true
-            }
-        }
-    }
+    val poiCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
 
     val fogCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
     var fogPolygonObj by remember { mutableStateOf<PolygonMapObject?>(null) }
@@ -137,6 +127,7 @@ fun YandexMapScreen(
 
     LaunchedEffect(poiItems, zoom) {
         poiCollection.clear()
+        val placemarkCollection = poiCollection.addCollection()
 
         val scale = when {
             zoom >= 17 -> 1.0f
@@ -145,9 +136,9 @@ fun YandexMapScreen(
             else -> 0.4f
         }
 
-        poiItems.forEachIndexed { index, item ->
+        poiItems.forEach { item ->
 
-            val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEachIndexed
+            val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
             val point = Point(geometryPoint.latitude, geometryPoint.longitude)
             val name = item.obj?.name?.toString().orEmpty()
 
@@ -160,28 +151,22 @@ fun YandexMapScreen(
 
             val place = Place(name, address, null, point.latitude, point.longitude)
 
-            val placemark = poiCollection.addPlacemark(point).apply {
+            placemarkCollection.addPlacemark().apply {
+                geometry = point
                 setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
                 userData = place
                 setIconStyle(IconStyle().apply {
-                    setScale(0f) // начинаем с 0, чтобы анимировать появление
-                    anchor?.set(0.5f, 1.0f)
+                    this.scale = scale
+                    this.anchor?.set(0.5f, 1.0f)
                 })
             }
-            launch {
-                val steps = 10
-                repeat(steps) { step ->
-                    placemark.setIconStyle(IconStyle().apply {
-                        setScale((step + 1) / steps.toFloat() * scale)
-                        anchor?.set(0.5f, 1.0f)
-                    })
-                    delay(16L) // ~60fps
-                }
-                placemark.setIconStyle(IconStyle().apply {
-                    setScale(scale)
-                    anchor?.set(0.5f, 1.0f)
-                })
-            }
+        }
+        placemarkCollection.addTapListener { mapObject, _ ->
+            val place = mapObject.userData as? Place ?: return@addTapListener false
+            Log.d("TapDebug", "Tapped on: ${place.name}")
+            Toast.makeText(context, place.name, Toast.LENGTH_SHORT).show()
+            selectedPlace = place
+            true
         }
     }
 
