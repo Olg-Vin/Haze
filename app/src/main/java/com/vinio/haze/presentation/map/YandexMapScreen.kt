@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -25,16 +26,26 @@ import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
 import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.geometry.BoundingBox
+import com.yandex.mapkit.geometry.LinearRing
 import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.geometry.Polygon
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.IconStyle
 import com.yandex.mapkit.map.MapType
 import com.yandex.mapkit.map.PlacemarkMapObject
+import com.yandex.mapkit.map.PolygonMapObject
 import com.yandex.mapkit.search.BusinessObjectMetadata
 import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.operation.union.CascadedPolygonUnion
+import org.locationtech.jts.geom.Polygon as JtsPolygon
+
+val geometryFactory = GeometryFactory()
 
 @Composable
 fun YandexMapScreen(
@@ -58,6 +69,22 @@ fun YandexMapScreen(
             }
         }
     }
+    // Работа с туманов
+    val fogCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
+    var fogPolygonObj by remember { mutableStateOf<PolygonMapObject?>(null) }
+    val visibleAreas = remember { mutableStateListOf<LinearRing>() }
+
+    val worldOuterRing = remember {
+        LinearRing(
+            listOf(
+                Point(85.0, -180.0),
+                Point(85.0, 180.0),
+                Point(-85.0, 180.0),
+                Point(-85.0, -180.0),
+                Point(85.0, -180.0)
+            )
+        )
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -77,6 +104,16 @@ fun YandexMapScreen(
         val region = mapView.mapWindow.map.visibleRegion
         val bbox = BoundingBox(region.bottomLeft, region.topRight)
         viewModel.requestSearch(bbox)
+
+        // Инициализируем полигон
+        fogPolygonObj = fogCollection.addPolygon(
+            Polygon(worldOuterRing, visibleAreas.toList())
+        ).apply {
+            fillColor = 0xF0000000.toInt() // тёмный полупрозрачный
+            strokeColor = 0x00000000.toInt()
+            strokeWidth = 0f
+            zIndex = 1f
+        }
     }
 
 
@@ -164,6 +201,21 @@ fun YandexMapScreen(
                 Animation(Animation.Type.SMOOTH, 1.0f),
                 null
             )
+
+            val newPolygon = makeSquarePolygon(point)
+            val union = CascadedPolygonUnion.union(listOf(newPolygon) + visibleAreas.map { toJtsPolygon(it.points) })
+
+            visibleAreas.clear()
+            when (union) {
+                is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union))
+                is org.locationtech.jts.geom.MultiPolygon -> {
+                    for (i in 0 until union.numGeometries) {
+                        visibleAreas.add(fromJtsPolygon(union.getGeometryN(i) as JtsPolygon))
+                    }
+                }
+            }
+
+            updateFogPolygon(fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList()))
         }
     }
 
@@ -212,3 +264,34 @@ private suspend fun animatePlacemarkMove(placemark: PlacemarkMapObject, target: 
         delay(16)
     }
 }
+
+fun makeSquarePolygon(center: Point, sideMeters: Double = 300.0): JtsPolygon {
+    val half = sideMeters / 2.0
+    val dx = half / (40075000 * Math.cos(center.latitude * Math.PI / 180) / 360)
+    val dy = half / 111320.0
+
+    val points = listOf(
+        Point(center.latitude - dy, center.longitude - dx),
+        Point(center.latitude - dy, center.longitude + dx),
+        Point(center.latitude + dy, center.longitude + dx),
+        Point(center.latitude + dy, center.longitude - dx),
+        Point(center.latitude - dy, center.longitude - dx) // замыкаем
+    )
+    return toJtsPolygon(points)
+}
+
+fun toJtsPolygon(points: List<Point>): JtsPolygon {
+    val coordinates = points.map { Coordinate(it.longitude, it.latitude) }.toTypedArray()
+    val shell = geometryFactory.createLinearRing(coordinates)
+    return geometryFactory.createPolygon(shell)
+}
+
+fun fromJtsPolygon(jtsPolygon: JtsPolygon): LinearRing {
+    return LinearRing(jtsPolygon.exteriorRing.coordinates.map { Point(it.y, it.x) })
+}
+
+fun updateFogPolygon(fog: PolygonMapObject?, polygon: Polygon) {
+    if (fog == null) return
+    fog.geometry = polygon
+}
+
