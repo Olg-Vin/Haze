@@ -137,14 +137,17 @@ fun YandexMapScreen(
         }
 
         poiItems.forEach { item ->
-
             val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
             val point = Point(geometryPoint.latitude, geometryPoint.longitude)
+
+            val isInVisibleArea = visibleAreas.any { ring ->
+                toJtsPolygon(ring.points).contains(geometryFactory.createPoint(Coordinate(point.longitude, point.latitude)))
+            }
+
             val name = item.obj?.name?.toString().orEmpty()
 
             val metadata = item.obj?.metadataContainer
-            val toponymAddress =
-                metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
+            val toponymAddress = metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
             val business = metadata?.getItem(BusinessObjectMetadata::class.java)
             val businessAddress = business?.address?.formattedAddress
             val address = businessAddress ?: toponymAddress
@@ -153,8 +156,13 @@ fun YandexMapScreen(
 
             placemarkCollection.addPlacemark().apply {
                 geometry = point
-                setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
-                userData = place
+                setIcon(
+                    ImageProvider.fromResource(
+                        context,
+                        if (isInVisibleArea) R.drawable.ic_marker else R.drawable.ic_marker_gray
+                    )
+                )
+                userData = if (isInVisibleArea) place else null
                 setIconStyle(IconStyle().apply {
                     this.scale = scale
                     this.anchor?.set(0.5f, 1.0f)
@@ -162,13 +170,13 @@ fun YandexMapScreen(
             }
         }
         placemarkCollection.addTapListener { mapObject, _ ->
-            val place = mapObject.userData as? Place ?: return@addTapListener false
-            Log.d("TapDebug", "Tapped on: ${place.name}")
-            Toast.makeText(context, place.name, Toast.LENGTH_SHORT).show()
-            selectedPlace = place
+            val tappedPlace = mapObject.userData as? Place ?: return@addTapListener false
+            Toast.makeText(context, tappedPlace.name, Toast.LENGTH_SHORT).show()
+            selectedPlace = tappedPlace
             true
         }
     }
+
 
     selectedPlace?.let { place ->
         PoiInfoDialog(place = place, onDismiss = { selectedPlace = null })
