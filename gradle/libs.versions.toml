@@ -1,5 +1,5 @@
 [versions]
-agp = "8.8.0"
+agp = "8.10.0"
 hiltAndroid = "2.56.2"
 hiltCompiler = "2.55"
 hiltNavigationCompose = "1.2.0"
@@ -24,6 +24,7 @@ navigationCompose = "2.9.0"
 playServicesLocation = "21.3.0"
 roomRuntime = "2.7.1"
 runtimeLivedata = "1.8.1"
+navigationComposeJvmstubs = "2.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,6 +60,7 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 maps-mobile = { module = "com.yandex.android:maps.mobile", version.ref = "mapsMobile" }
 androidx-lifecycle-viewmodel-compose-android = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose-android", version.ref = "lifecycleViewmodelComposeAndroid" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+androidx-navigation-compose-jvmstubs = { group = "androidx.navigation", name = "navigation-compose-jvmstubs", version.ref = "navigationComposeJvmstubs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

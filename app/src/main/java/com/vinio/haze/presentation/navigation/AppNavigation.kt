@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.vinio.haze.presentation.BottomNavScreen
 import com.vinio.haze.presentation.map.YandexMapScreen
 import com.vinio.haze.presentation.startScreen.StartScreen
 
@@ -38,7 +39,11 @@ fun AppNavigation() {
         }
 
         composable(Screen.Map.route) {
-            YandexMapScreen()
+            YandexMapScreen(navController = navController)
+        }
+
+        composable(Screen.BottomNav.route) {
+            BottomNavScreen()
         }
     }
 }

@@ -3,8 +3,19 @@ package com.vinio.haze.presentation.map
 import android.app.Activity
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -15,14 +26,21 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.vinio.haze.R
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
+import com.vinio.haze.presentation.navigation.Screen
 import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.geometry.BoundingBox
@@ -38,7 +56,6 @@ import com.yandex.mapkit.search.BusinessObjectMetadata
 import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.operation.union.CascadedPolygonUnion
@@ -50,6 +67,7 @@ val geometryFactory = GeometryFactory()
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
     viewModel: YandexMapViewModel = hiltViewModel(),
+    navController: NavController,
 ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
@@ -75,6 +93,7 @@ fun YandexMapScreen(
         )
     }
     val locationPoints by viewModel.locationPoints.observeAsState(emptyList())
+    var isFollowingUser by remember { mutableStateOf(true) }
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -83,6 +102,72 @@ fun YandexMapScreen(
                 .zIndex(0f),
             factory = { mapView }
         )
+        IconButton(
+            onClick = { navController.navigate(Screen.BottomNav.route) },
+            modifier = Modifier
+                .padding(16.dp, 60.dp, 16.dp, 16.dp)
+                .align(Alignment.TopStart)
+                .clip(CircleShape)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.avatar), // аватар
+                contentDescription = "Profile",
+                modifier = Modifier.size(64.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 16.dp)
+        ) {
+            IconButton(onClick = {
+                val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
+                mapView.mapWindow.map.move(
+                    CameraPosition(
+                        mapView.mapWindow.map.cameraPosition.target,
+                        currentZoom + 1f,
+                        0f,
+                        0f
+                    ),
+                    Animation(Animation.Type.SMOOTH, 0.3f),
+                    null
+                )
+            }) {
+                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Zoom In")
+            }
+            IconButton(onClick = {
+                val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
+                mapView.mapWindow.map.move(
+                    CameraPosition(
+                        mapView.mapWindow.map.cameraPosition.target,
+                        currentZoom - 1f,
+                        0f,
+                        0f
+                    ),
+                    Animation(Animation.Type.SMOOTH, 0.3f),
+                    null
+                )
+            }) {
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Zoom Out")
+            }
+            IconButton(onClick = {
+                isFollowingUser = !isFollowingUser
+                userLocation?.let { point ->
+                    mapView.mapWindow.map.move(
+                        CameraPosition(point, mapView.mapWindow.map.cameraPosition.zoom, 0f, 0f),
+                        Animation(Animation.Type.SMOOTH, 1.0f),
+                        null
+                    )
+                }
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Send,
+                    contentDescription = "Locate",
+                    tint = if (isFollowingUser) Color.Blue else Color.Gray
+                )
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -96,7 +181,7 @@ fun YandexMapScreen(
         fogPolygonObj = fogCollection.addPolygon(
             Polygon(worldOuterRing, visibleAreas.toList())
         ).apply {
-            fillColor = 0xF0000000.toInt() // тёмный полупрозрачный
+            fillColor = 0xF5CCCCCC.toInt()
             strokeColor = 0x00000000.toInt()
             strokeWidth = 0f
             zIndex = 0f
@@ -141,13 +226,21 @@ fun YandexMapScreen(
             val point = Point(geometryPoint.latitude, geometryPoint.longitude)
 
             val isInVisibleArea = visibleAreas.any { ring ->
-                toJtsPolygon(ring.points).contains(geometryFactory.createPoint(Coordinate(point.longitude, point.latitude)))
+                toJtsPolygon(ring.points).contains(
+                    geometryFactory.createPoint(
+                        Coordinate(
+                            point.longitude,
+                            point.latitude
+                        )
+                    )
+                )
             }
 
             val name = item.obj?.name?.toString().orEmpty()
 
             val metadata = item.obj?.metadataContainer
-            val toponymAddress = metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
+            val toponymAddress =
+                metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
             val business = metadata?.getItem(BusinessObjectMetadata::class.java)
             val businessAddress = business?.address?.formattedAddress
             val address = businessAddress ?: toponymAddress
@@ -207,11 +300,13 @@ fun YandexMapScreen(
                 animatePlacemarkMove(placemark, point)
             }
 
-            mapView.mapWindow.map.move(
-                CameraPosition(point, zoom, 0f, 0f),
-                Animation(Animation.Type.SMOOTH, 1.0f),
-                null
-            )
+            if (isFollowingUser) {
+                mapView.mapWindow.map.move(
+                    CameraPosition(point, 16.0f, 0f, 0f),
+                    Animation(Animation.Type.SMOOTH, 1.0f),
+                    null
+                )
+            }
 
             val newPolygon = makeSquarePolygon(point)
             val union =
