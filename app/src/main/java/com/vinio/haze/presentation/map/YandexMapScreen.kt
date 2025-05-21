@@ -152,21 +152,30 @@ fun YandexMapScreen(
             val businessAddress = business?.address?.formattedAddress
             val address = businessAddress ?: toponymAddress
 
-            val place = Place(name, address, null, point.latitude, point.longitude)
+            if (isInVisibleArea) {
+                val place = Place(null, name, address, null, point.latitude, point.longitude)
 
-            placemarkCollection.addPlacemark().apply {
-                geometry = point
-                setIcon(
-                    ImageProvider.fromResource(
-                        context,
-                        if (isInVisibleArea) R.drawable.ic_marker else R.drawable.ic_marker_gray
-                    )
-                )
-                userData = if (isInVisibleArea) place else null
-                setIconStyle(IconStyle().apply {
-                    this.scale = scale
-                    this.anchor?.set(0.5f, 1.0f)
-                })
+                viewModel.savePlaceIfNeeded(place)
+
+                placemarkCollection.addPlacemark().apply {
+                    geometry = point
+                    setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
+                    userData = place
+                    setIconStyle(IconStyle().apply {
+                        this.scale = scale
+                        this.anchor?.set(0.5f, 1.0f)
+                    })
+                }
+            } else {
+                placemarkCollection.addPlacemark().apply {
+                    geometry = point
+                    setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker_gray))
+                    userData = null
+                    setIconStyle(IconStyle().apply {
+                        this.scale = scale
+                        this.anchor?.set(0.5f, 1.0f)
+                    })
+                }
             }
         }
         placemarkCollection.addTapListener { mapObject, _ ->
@@ -221,7 +230,6 @@ fun YandexMapScreen(
         }
     }
 
-    // Слушаем перемещение камеры и перезапускаем поиск
     DisposableEffect(mapView) {
         (context as? Activity)?.startLocation()
         val listener =

@@ -12,3 +12,21 @@ fun LocationPoint.toEntity() = LocationPointEntity (
 fun LocationPointEntity.toDomain() = LocationPoint (
     cellLat, cellLon
 )
+
+fun PlaceEntity.toDomain(): Place = Place(
+    id = id,
+    name = name,
+    address= address ?: "",
+    description = description,
+    lat = lat,
+    lon = lon
+)
+
+fun Place.toEntity(): PlaceEntity = PlaceEntity(
+    id = id ?: "",
+    name = name,
+    address = address,
+    description = description,
+    lat = lat,
+    lon = lon
+)

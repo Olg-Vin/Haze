@@ -16,4 +16,7 @@ interface PlaceDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(place: PlaceEntity)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM places WHERE id = :id)")
+    suspend fun exists(id: String): Boolean
 }

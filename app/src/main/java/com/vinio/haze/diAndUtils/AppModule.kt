@@ -7,11 +7,13 @@ import com.vinio.haze.domain.ai.AiRequest
 import com.vinio.haze.domain.location.LocationClient
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.repository.LocationPointRepository
+import com.vinio.haze.domain.repository.PlaceRepository
 import com.vinio.haze.infrastructure.ai.AiRequestImpl
 import com.vinio.haze.infrastructure.db.AppDatabase
 import com.vinio.haze.infrastructure.db.dao.LocationPointDao
 import com.vinio.haze.infrastructure.db.dao.PlaceDao
 import com.vinio.haze.infrastructure.db.repository.LocationPointRepositoryImpl
+import com.vinio.haze.infrastructure.db.repository.PlaceRepositoryImpl
 import com.vinio.haze.infrastructure.location.DefaultLocationClient
 import dagger.Module
 import dagger.Provides
@@ -58,6 +60,14 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun providePlaceRepository(
+        placeDao: PlaceDao
+    ) : PlaceRepository {
+        return PlaceRepositoryImpl(placeDao)
+    }
+
+    @Provides
+    @Singleton
     fun providePlaceDao(appDatabase: AppDatabase): PlaceDao {
         return appDatabase.placeDao()
     }
@@ -73,9 +83,6 @@ object AppModule {
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "places.db")
             .build()
-//        return Room.databaseBuilder(context, AppDatabase::class.java, "places.db")
-//            .fallbackToDestructiveMigration() // для удаления БД
-//            .build()
     }
 }
 

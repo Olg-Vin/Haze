@@ -6,4 +6,5 @@ interface PlaceRepository {
     suspend fun getAllPlaces() : List<Place>
     suspend fun savePlace(place: Place)
     suspend fun saveAllPlaces(places: List<Place>)
+    suspend fun exists(id: String): Boolean
 }

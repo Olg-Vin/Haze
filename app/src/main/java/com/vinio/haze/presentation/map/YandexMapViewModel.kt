@@ -7,7 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.model.LocationPoint
+import com.vinio.haze.domain.model.Place
 import com.vinio.haze.domain.repository.LocationPointRepository
+import com.vinio.haze.domain.repository.PlaceRepository
+import com.vinio.haze.infrastructure.db.repository.PlaceRepositoryImpl
 import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Geometry
@@ -37,7 +40,8 @@ import org.locationtech.jts.geom.Polygon as JtsPolygon
 @HiltViewModel
 class YandexMapViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
-    private val repository: LocationPointRepository
+    private val repository: LocationPointRepository,
+    private val placeRepository: PlaceRepository,
 ) : ViewModel() {
     private val searchManager =
         SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE)
@@ -144,5 +148,19 @@ class YandexMapViewModel @Inject constructor(
         val bl = southWest.round()
         val tr = northEast.round()
         return "${bl.latitude},${bl.longitude}_${tr.latitude},${tr.longitude}"
+    }
+
+    fun savePlaceIfNeeded(place: Place) {
+        viewModelScope.launch {
+            val id = generatePlaceId(place.name, place.lat, place.lon)
+            val exists = placeRepository.exists(id)
+            if (!exists) {
+                placeRepository.savePlace(place.copy(id = id))
+            }
+        }
+    }
+
+    private fun generatePlaceId(name: String, lat: Double, lon: Double): String {
+        return "${name}_${lat}_${lon}".hashCode().toString()
     }
 }
