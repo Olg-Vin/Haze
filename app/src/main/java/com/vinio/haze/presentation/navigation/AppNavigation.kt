@@ -1,11 +1,14 @@
 package com.vinio.haze.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.vinio.haze.presentation.BottomNavScreen
+import androidx.navigation.navArgument
+import com.vinio.haze.presentation.screens.BottomNavScreen
 import com.vinio.haze.presentation.map.YandexMapScreen
+import com.vinio.haze.presentation.screens.poiScreens.poiDetails.PoiDetailsScreen
 import com.vinio.haze.presentation.startScreen.StartScreen
 
 @Composable
@@ -43,7 +46,22 @@ fun AppNavigation() {
         }
 
         composable(Screen.BottomNav.route) {
-            BottomNavScreen()
+            BottomNavScreen(navController = navController)
+        }
+
+        composable(
+            route = "poiDetails/{poiId}?isCity={isCity}",
+            arguments = listOf(
+                navArgument("poiId") { type = NavType.StringType },
+                navArgument("isCity") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) {
+            val poiId = it.arguments?.getString("poiId") ?: return@composable
+            val isCity = it.arguments?.getBoolean("isCity") ?: false
+            PoiDetailsScreen(poiId = poiId, isCityMode = isCity)
         }
     }
 }

@@ -5,14 +5,15 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.vinio.haze.infrastructure.db.entity.PlaceEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PlaceDao {
     @Query("SELECT * FROM places")
-    suspend fun getAll(): List<PlaceEntity>
+    fun getAll(): Flow<List<PlaceEntity>>
 
     @Query("SELECT DISTINCT city FROM places WHERE city IS NOT NULL AND city != ''")
-    suspend fun getDistinctCities(): List<String>
+    fun getDistinctCities(): Flow<List<String>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(places: List<PlaceEntity>)
@@ -22,4 +23,10 @@ interface PlaceDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM places WHERE id = :id)")
     suspend fun exists(id: String): Boolean
+
+    @Query("SELECT * FROM places WHERE id = :id")
+    suspend fun getById(id: String): PlaceEntity?
+
+    @Query("UPDATE places SET description = :description WHERE id = :id")
+    suspend fun updateDescription(id: String, description: String)
 }

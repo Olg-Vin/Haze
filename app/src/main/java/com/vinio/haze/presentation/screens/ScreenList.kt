@@ -8,12 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun HomeScreen() { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Home") } }
-
-@Composable
-fun SearchScreen() { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Search") } }
-
-@Composable
 fun ProfileScreen() { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Profile") } }
 
 @Composable

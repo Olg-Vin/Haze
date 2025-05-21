@@ -1,4 +1,4 @@
-package com.vinio.haze.presentation
+package com.vinio.haze.presentation.screens
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -13,7 +13,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.vinio.haze.presentation.navigation.BottomNavItem
 
 @Composable
 fun BottomNavBar(navController: NavController) {
@@ -21,7 +20,7 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem.CityList,
         BottomNavItem.PoiList,
         BottomNavItem.Achievements,
-        BottomNavItem.Settings
+        BottomNavItem.Settings,
     )
 
     NavigationBar {
