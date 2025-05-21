@@ -11,6 +11,9 @@ interface PlaceDao {
     @Query("SELECT * FROM places")
     suspend fun getAll(): List<PlaceEntity>
 
+    @Query("SELECT DISTINCT city FROM places WHERE city IS NOT NULL AND city != ''")
+    suspend fun getDistinctCities(): List<String>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(places: List<PlaceEntity>)
 

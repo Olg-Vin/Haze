@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class PlaceEntity (
     @PrimaryKey val id: String,
     val name: String,
+    val city: String?,
     val address: String?,
     val description: String?,
     val lat: Double,

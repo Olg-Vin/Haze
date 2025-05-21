@@ -52,6 +52,7 @@ import com.yandex.mapkit.map.IconStyle
 import com.yandex.mapkit.map.MapType
 import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.map.PolygonMapObject
+import com.yandex.mapkit.search.Address
 import com.yandex.mapkit.search.BusinessObjectMetadata
 import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
@@ -239,14 +240,29 @@ fun YandexMapScreen(
             val name = item.obj?.name?.toString().orEmpty()
 
             val metadata = item.obj?.metadataContainer
-            val toponymAddress =
-                metadata?.getItem(ToponymObjectMetadata::class.java)?.address?.formattedAddress
+            val toponymMetadata = metadata?.getItem(ToponymObjectMetadata::class.java)
+            val toponymAddress = toponymMetadata?.address?.formattedAddress
             val business = metadata?.getItem(BusinessObjectMetadata::class.java)
             val businessAddress = business?.address?.formattedAddress
             val address = businessAddress ?: toponymAddress
+            val cityFromToponym = toponymMetadata?.address?.components
+                ?.firstOrNull { it.kinds.contains(Address.Component.Kind.LOCALITY) }
+                ?.name
+
+            val cityFromBusiness = business?.address?.components
+                ?.firstOrNull { component ->
+                    component.kinds.any { kind ->
+                        kind == Address.Component.Kind.LOCALITY || kind == Address.Component.Kind.DISTRICT
+                    }
+                }?.name
+
+            val city = cityFromBusiness ?: cityFromToponym
+
+            Log.d("City", city.toString())
+            Log.d("Address", address.toString())
 
             if (isInVisibleArea) {
-                val place = Place(null, name, address, null, point.latitude, point.longitude)
+                val place = Place(null, name, city, address, null, point.latitude, point.longitude)
 
                 viewModel.savePlaceIfNeeded(place)
 
