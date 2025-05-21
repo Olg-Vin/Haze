@@ -38,8 +38,12 @@ fun AppNavigation() {
         }
 
         composable(Screen.Map.route) {
-            YandexMapScreen()
+            YandexMapScreen(navController = navController)
         }
+
+        /*composable(Screen.CityList.route) {
+            CityListScreen()
+        }*/
     }
 }
 

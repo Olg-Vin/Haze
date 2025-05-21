@@ -5,11 +5,15 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.vinio.haze.infrastructure.db.entity.PlaceEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PlaceDao {
     @Query("SELECT * FROM places")
-    suspend fun getAll(): List<PlaceEntity>
+    suspend fun getAll(): Flow<List<PlaceEntity>>
+
+/*    @Query("SELECT address FROM places")
+    suspend fun getAllCities(): Flow<List<PlaceEntity>>*/
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(places: List<PlaceEntity>)

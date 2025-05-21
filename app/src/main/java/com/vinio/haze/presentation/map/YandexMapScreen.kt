@@ -3,8 +3,20 @@ package com.vinio.haze.presentation.map
 import android.app.Activity
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -15,14 +27,20 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.vinio.haze.R
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
+import com.vinio.haze.presentation.navigation.Screen
 import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.geometry.BoundingBox
@@ -50,6 +68,7 @@ val geometryFactory = GeometryFactory()
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
     viewModel: YandexMapViewModel = hiltViewModel(),
+    navController: NavController,
 ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
@@ -83,6 +102,35 @@ fun YandexMapScreen(
                 .zIndex(0f),
             factory = { mapView }
         )
+        IconButton(
+            onClick = { navController.navigate(Screen.CityList.route) },
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.TopStart)
+                .clip(CircleShape)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_foreground), // аватар
+                contentDescription = "Profile",
+                modifier = Modifier.size(48.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 16.dp)
+        ) {
+            IconButton(onClick = { /* Zoom In */ }) {
+                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Zoom In")
+            }
+            IconButton(onClick = { /* Zoom Out */ }) {
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Zoom Out")
+            }
+            IconButton(onClick = { /* Locate */ }) {
+                Icon(Icons.Default.Send, contentDescription = "Locate")
+            }
+        }
     }
 
     LaunchedEffect(Unit) {

@@ -5,13 +5,14 @@ import com.vinio.haze.diAndUtils.toEntity
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.domain.repository.PlaceRepository
 import com.vinio.haze.infrastructure.db.dao.PlaceDao
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class PlaceRepositoryImpl @Inject constructor(
     private val placeDao: PlaceDao
 ) : PlaceRepository {
 
-    override suspend fun getAllPlaces(): List<Place> {
+    override suspend fun getAllPlaces(): Flow<List<Place>> {
         return placeDao.getAll().map { it.toDomain() }
     }
 
