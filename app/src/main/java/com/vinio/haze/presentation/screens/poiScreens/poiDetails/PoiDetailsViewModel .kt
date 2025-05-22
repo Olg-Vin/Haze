@@ -27,6 +27,12 @@ class PoiDetailsViewModel @Inject constructor(
     private val _description = MutableStateFlow("")
     val description: StateFlow<String> = _description
 
+    private val _name = MutableStateFlow("")
+    val name: StateFlow<String> = _name
+
+    private val _imageUrl = MutableStateFlow("")
+    val imageUrl: StateFlow<String> = _imageUrl
+
     private var currentPlace: Place? = null
 
     fun fetchPlaceDetails(poiId: String, isCityMode: Boolean = false) {
@@ -34,7 +40,9 @@ class PoiDetailsViewModel @Inject constructor(
             val place = placeRepository.getPlaceById(poiId)
             currentPlace = place
 
-            val name = if (isCityMode) place.city ?: place.name else place.name
+            val resolvedName = if (isCityMode) place.city ?: place.name else place.name
+            _name.value = resolvedName
+
             val lat = place.lat
             val lon = place.lon
 
@@ -47,12 +55,11 @@ class PoiDetailsViewModel @Inject constructor(
             _description.value = ""
 
             try {
-                aiRequest.streamPoiDescription(name, lat, lon)
+                aiRequest.streamPoiDescription(resolvedName, lat, lon)
                     .collectLatest { token ->
                         _description.value += token
                     }
 
-                // Только если это не "город", сохраняем описание
                 if (!isCityMode) {
                     placeRepository.updatePlaceDescription(place.id!!, _description.value)
                 }
@@ -63,3 +70,4 @@ class PoiDetailsViewModel @Inject constructor(
         }
     }
 }
+

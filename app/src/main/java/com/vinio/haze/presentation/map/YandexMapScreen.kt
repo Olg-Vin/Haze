@@ -41,6 +41,7 @@ import com.vinio.haze.R
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
 import com.vinio.haze.presentation.navigation.Screen
+import com.vinio.haze.presentation.screens.BottomNavItem
 import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.geometry.BoundingBox
@@ -104,7 +105,7 @@ fun YandexMapScreen(
             factory = { mapView }
         )
         IconButton(
-            onClick = { navController.navigate(Screen.BottomNav.route) },
+            onClick = { navController.navigate(BottomNavItem.CityList.route) },
             modifier = Modifier
                 .padding(16.dp, 60.dp, 16.dp, 16.dp)
                 .align(Alignment.TopStart)

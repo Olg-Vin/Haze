@@ -6,11 +6,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.vinio.haze.diAndUtils.hasLocationPermission
 import com.vinio.haze.diAndUtils.hasNotificationPermission
 
-
-/**
- * Если все необходимые разрешения предоставлены, в данном случае геолокация,
- * то пользователя следует перенаправить сразу на MapScreen() в обход StartScreen()
- * */
 @Composable
 fun PermissionCheckScreen(
     onPermissionsGranted: () -> Unit,

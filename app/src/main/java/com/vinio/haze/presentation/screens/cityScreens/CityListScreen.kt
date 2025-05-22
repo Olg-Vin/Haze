@@ -30,10 +30,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.vinio.haze.R
+import java.net.URLEncoder
 
 @Composable
-fun CityListScreen(viewModel: CityListViewModel = hiltViewModel()) {
+fun CityListScreen(
+    navController: NavController,
+    viewModel: CityListViewModel = hiltViewModel()
+) {
     val cities by viewModel.cities.collectAsState()
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
@@ -43,20 +48,30 @@ fun CityListScreen(viewModel: CityListViewModel = hiltViewModel()) {
         }
 
         items(cities) { cityName ->
-            CityItem(cityName, R.drawable.ic_poi)
+            CityItem(
+                name = cityName,
+                imageRes = R.drawable.placeholder_poi,
+                onClick = {
+                    navController.navigate("cityDetails/${URLEncoder.encode(cityName, "UTF-8")}")
+                }
+            )
         }
     }
 }
 
 @Composable
-fun CityItem(name: String, @DrawableRes imageRes: Int) {
+fun CityItem(
+    name: String,
+    @DrawableRes imageRes: Int,
+    onClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(8.dp))
-            .clickable { }
-            .background(MaterialTheme.colorScheme.surface) // чтобы лучше было видно
+            .clickable { onClick() }
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Image(
             painter = painterResource(imageRes),
@@ -64,7 +79,7 @@ fun CityItem(name: String, @DrawableRes imageRes: Int) {
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp) // высота картинки
+                .height(180.dp)
                 .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
         )
         Row(

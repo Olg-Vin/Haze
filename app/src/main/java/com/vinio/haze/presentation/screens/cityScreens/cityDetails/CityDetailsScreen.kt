@@ -1,4 +1,4 @@
-package com.vinio.haze.presentation.screens.poiScreens.poiDetails
+package com.vinio.haze.presentation.screens.cityScreens.cityDetails
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -44,19 +44,18 @@ import com.vinio.haze.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun PoiDetailsScreen(
-    poiId: String,
-    isCityMode: Boolean = false,
-    viewModel: PoiDetailsViewModel = hiltViewModel(),
-    onBack: () -> Unit // передаём из NavHost
+fun CityDetailsScreen(
+    cityName: String,
+    viewModel: CityDetailsViewModel = hiltViewModel(),
+    onBack: () -> Unit
 ) {
     val description by viewModel.description.collectAsState()
     val imageUrl by viewModel.imageUrl.collectAsState()
     val name by viewModel.name.collectAsState()
     var displayedText by remember { mutableStateOf("") }
 
-    LaunchedEffect(poiId, isCityMode) {
-        viewModel.fetchPlaceDetails(poiId, isCityMode)
+    LaunchedEffect(cityName) {
+        viewModel.fetchCityDetails(cityName)
         displayedText = ""
     }
 
@@ -68,8 +67,6 @@ fun PoiDetailsScreen(
         }
     }
 
-    val title = if (isCityMode) "О городе" else "О месте"
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +76,7 @@ fun PoiDetailsScreen(
             if (imageUrl.isNotBlank()) {
                 AsyncImage(
                     model = imageUrl,
-                    contentDescription = "Изображение места",
+                    contentDescription = "Изображение города",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -103,10 +100,7 @@ fun PoiDetailsScreen(
                 modifier = Modifier
                     .padding(16.dp)
                     .align(Alignment.TopStart)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    )
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                     .size(36.dp)
             ) {
                 Icon(
@@ -123,7 +117,7 @@ fun PoiDetailsScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = title,
+                text = "О городе",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
