@@ -230,7 +230,8 @@ fun YandexMapScreen(
     }
 
     LaunchedEffect(locationPoints, fogPolygonObj, fogOpacity) {
-        if (locationPoints.isNotEmpty() && fogPolygonObj != null) {
+        if (locationPoints.isNotEmpty()
+            && fogPolygonObj != null) {
             val polygons = locationPoints.map { point ->
                 makeSquarePolygon(Point(point.cellLat, point.cellLon))
             }
@@ -242,7 +243,9 @@ fun YandexMapScreen(
                 is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union))
                 is org.locationtech.jts.geom.MultiPolygon -> {
                     for (i in 0 until union.numGeometries) {
-                        visibleAreas.add(fromJtsPolygon(union.getGeometryN(i) as JtsPolygon))
+                        visibleAreas.add(fromJtsPolygon(
+                            union.getGeometryN(i) as JtsPolygon
+                        ))
                     }
                 }
             }
@@ -252,7 +255,10 @@ fun YandexMapScreen(
                 red = 0.8f, green = 0.8f, blue = 0.8f
             ).toArgb()
 
-            updateFogPolygon(fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList()))
+            updateFogPolygon(
+                fogPolygonObj,
+                Polygon(worldOuterRing, visibleAreas.toList())
+            )
         }
     }
 
@@ -374,18 +380,24 @@ fun YandexMapScreen(
 
             val newPolygon = makeSquarePolygon(point)
             val union =
-                CascadedPolygonUnion.union(listOf(newPolygon) + visibleAreas.map { toJtsPolygon(it.points) })
+                CascadedPolygonUnion.union(
+                    listOf(newPolygon) + visibleAreas.map { toJtsPolygon(it.points) }
+                )
 
             visibleAreas.clear()
             when (union) {
                 is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union))
                 is org.locationtech.jts.geom.MultiPolygon -> {
                     for (i in 0 until union.numGeometries) {
-                        visibleAreas.add(fromJtsPolygon(union.getGeometryN(i) as JtsPolygon))
+                        visibleAreas.add(fromJtsPolygon(
+                            union.getGeometryN(i) as JtsPolygon)
+                        )
                     }
                 }
             }
-            updateFogPolygon(fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList()))
+            updateFogPolygon(
+                fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList())
+            )
         }
     }
 

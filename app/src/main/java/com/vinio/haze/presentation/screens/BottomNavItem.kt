@@ -14,7 +14,10 @@ sealed class BottomNavItem(
     object Settings : BottomNavItem("settings", "Настройки", R.drawable.ic_settings)
 
     object PoiDetails : BottomNavItem("poiDetails/{poiId}?isCity={isCity}", "") {
-        fun createRoute(poiId: String, isCity: Boolean = false): String {
+        fun createRoute(
+            poiId: String,
+            isCity: Boolean = false
+        ): String {
             return "poiDetails/$poiId?isCity=$isCity"
         }
     }

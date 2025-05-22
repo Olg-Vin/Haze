@@ -54,8 +54,13 @@ fun PoiListScreen(
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            Text("Достопримечательности", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Достопримечательности",
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp)
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             SimpleCityDropdown(
                 cities = cities,
@@ -63,7 +68,9 @@ fun PoiListScreen(
                 onCitySelected = { viewModel.selectCity(it) }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             val filteredPlaces = if (selectedCity.isEmpty()) {
                 places

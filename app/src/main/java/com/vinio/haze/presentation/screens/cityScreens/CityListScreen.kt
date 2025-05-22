@@ -47,14 +47,22 @@ fun CityListScreen(
 ) {
     val cities by viewModel.cities.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
                 .padding(8.dp)
                 .fillMaxSize()
         ) {
-            Text("Города", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Города",
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            )
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             LazyColumn(
                 modifier = Modifier
@@ -81,7 +89,9 @@ fun CityListScreen(
         }
 
         IconButton(
-            onClick = { navController.navigate(Screen.Map.route) },
+            onClick = {
+                navController.navigate(Screen.Map.route)
+                      },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(4.dp)

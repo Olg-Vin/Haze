@@ -43,13 +43,20 @@ object AppModule {
     fun provideLocationClient(
         @ApplicationContext context: Context,
         fusedLocationClient: com.google.android.gms.location.FusedLocationProviderClient
-    ): LocationClient = DefaultLocationClient(context, fusedLocationClient)
+    ): LocationClient {
+        return DefaultLocationClient(
+            context,
+            fusedLocationClient
+        )
+    }
 
     @Provides
     @Singleton
     fun provideLocationRepository(
         locationPointRepository: LocationPointRepository
-    ): LocationRepository = LocationRepository(locationPointRepository)
+    ): LocationRepository {
+        return LocationRepository(locationPointRepository)
+    }
 
     @Provides
     @Singleton
@@ -69,26 +76,34 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePlaceDao(appDatabase: AppDatabase): PlaceDao {
+    fun providePlaceDao(
+        appDatabase: AppDatabase
+    ): PlaceDao {
         return appDatabase.placeDao()
     }
 
     @Provides
     @Singleton
-    fun provideLocationDao(appDatabase: AppDatabase): LocationPointDao {
+    fun provideLocationDao(
+        appDatabase: AppDatabase
+    ): LocationPointDao {
         return appDatabase.locationDao()
     }
 
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+    fun provideAppDatabase(
+        @ApplicationContext context: Context
+    ): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "places.db")
             .build()
     }
 
     @Provides
     @Singleton
-    fun provideSettingsPreferences(@ApplicationContext context: Context): SettingsPreferences {
+    fun provideSettingsPreferences(
+        @ApplicationContext context: Context
+    ): SettingsPreferences {
         return SettingsPreferences(context)
     }
 }

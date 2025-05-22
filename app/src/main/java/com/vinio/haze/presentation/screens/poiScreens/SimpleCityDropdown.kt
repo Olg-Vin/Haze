@@ -31,7 +31,9 @@ fun SimpleCityDropdown(
             onClick = { expanded = true },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (selectedCity.isEmpty()) "Все города" else selectedCity)
+            Text(
+                if (selectedCity.isEmpty()) "Все города" else selectedCity
+            )
             Spacer(Modifier.weight(1f))
             Icon(Icons.Default.ArrowDropDown, contentDescription = "Выбрать город")
         }

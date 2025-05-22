@@ -13,7 +13,8 @@ fun PermissionCheckScreen(
 ) {
     val context = LocalContext.current
 
-    val fineLocationGranted = context.hasLocationPermission() && context.hasNotificationPermission()
+    val fineLocationGranted =
+        context.hasLocationPermission() && context.hasNotificationPermission()
 
     LaunchedEffect(Unit) {
         if (fineLocationGranted) {

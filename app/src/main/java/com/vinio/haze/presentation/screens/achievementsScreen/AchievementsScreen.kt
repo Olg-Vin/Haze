@@ -68,8 +68,14 @@ fun AchievementsScreen(
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            Text("Достижения", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Достижения",
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            )
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             LazyColumn(
                 modifier = Modifier
@@ -113,7 +119,9 @@ fun AchievementItem(title: String, current: Int, total: Int) {
             .padding(16.dp)
             .height(48.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = title,
                 modifier = Modifier.weight(1f),
@@ -129,7 +137,9 @@ fun AchievementItem(title: String, current: Int, total: Int) {
             )
         }
         if (current < total) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
             LinearProgressIndicator(
                 progress = { current.toFloat() / total },
                 modifier = Modifier

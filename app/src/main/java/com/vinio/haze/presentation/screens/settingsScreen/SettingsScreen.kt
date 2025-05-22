@@ -129,9 +129,17 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Настройки", fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier = Modifier.height(24.dp)
+        )
+        Text(
+            "Настройки",
+            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp
+        )
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
 
         Text("Прозрачность тумана войны: ${fogOpacity.toInt()}%")
         FogOpacitySlider(
@@ -139,7 +147,9 @@ fun SettingsScreen(
             onFogOpacityChange = { viewModel.setFogOpacity(it) }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
 
         // Show POI toggle
         Row(
@@ -157,7 +167,9 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
 
         // Reset progress
         Button(

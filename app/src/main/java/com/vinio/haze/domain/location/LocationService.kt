@@ -37,6 +37,7 @@ class LocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("LocationService", "onCreate")
         locationClient = DefaultLocationClient(
             applicationContext,
             LocationServices.getFusedLocationProviderClient(applicationContext)
@@ -82,11 +83,13 @@ class LocationService : Service() {
 
     private fun stop() {
         stopForeground(true)
+        Log.d("LocationService", "stop")
         stopSelf()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d("LocationService", "onDestroy")
         serviceScope.cancel()
     }
 

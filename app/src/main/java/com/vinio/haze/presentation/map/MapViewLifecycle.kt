@@ -14,9 +14,13 @@ import com.yandex.mapkit.mapview.MapView
 fun rememberMapViewWithLifecycle(): MapView {
     val context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
-    val mapView = remember { MapView(context) }
+    val mapView = remember {
+        MapView(context)
+    }
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(
+        lifecycleOwner
+    ) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_START -> mapView.onStart()

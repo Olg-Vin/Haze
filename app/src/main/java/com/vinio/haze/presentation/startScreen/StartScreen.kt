@@ -58,16 +58,18 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
     val permissionsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val locationGranted =
+            permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
 
         if (locationGranted) {
             onPermissionsGranted()
         } else {
             // Check if we can ask again
-            val showRationale = ActivityCompat.shouldShowRequestPermissionRationale(
-                activity ?: return@rememberLauncherForActivityResult,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
+            val showRationale =
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity ?: return@rememberLauncherForActivityResult,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
             if (showRationale) {
                 showSecondAttemptDialog = true
             } else {
@@ -75,13 +77,15 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
             }
         }
 
-        // You can still show toast for both
-        val notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
-        Toast.makeText(
-            context,
-            "Геолокация: ${if (locationGranted) "OK" else "Нет"}, Уведомления: ${if (notificationGranted) "OK" else "Нет"}",
-            Toast.LENGTH_SHORT
-        ).show()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
+            Toast.makeText(
+                context,
+                "Геолокация: ${if (locationGranted) "OK" else "Нет"}, " +
+                        "Уведомления: ${if (notificationGranted) "OK" else "Нет"}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     Box(
