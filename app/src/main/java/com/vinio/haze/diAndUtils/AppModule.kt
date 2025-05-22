@@ -15,6 +15,7 @@ import com.vinio.haze.infrastructure.db.dao.PlaceDao
 import com.vinio.haze.infrastructure.db.repository.LocationPointRepositoryImpl
 import com.vinio.haze.infrastructure.db.repository.PlaceRepositoryImpl
 import com.vinio.haze.infrastructure.location.DefaultLocationClient
+import com.vinio.haze.presentation.screens.settingsScreen.SettingsPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -83,6 +84,12 @@ object AppModule {
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "places.db")
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSettingsPreferences(@ApplicationContext context: Context): SettingsPreferences {
+        return SettingsPreferences(context)
     }
 }
 

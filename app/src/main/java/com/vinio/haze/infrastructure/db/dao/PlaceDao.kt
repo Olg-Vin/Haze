@@ -29,4 +29,7 @@ interface PlaceDao {
 
     @Query("UPDATE places SET description = :description WHERE id = :id")
     suspend fun updateDescription(id: String, description: String)
+
+    @Query("SELECT COUNT(*) FROM places")
+    fun getOpenedPoiCount(): Flow<Int>
 }

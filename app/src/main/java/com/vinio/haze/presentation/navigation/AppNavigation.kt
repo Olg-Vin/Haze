@@ -14,12 +14,12 @@ import androidx.navigation.navArgument
 import com.vinio.haze.presentation.map.YandexMapScreen
 import com.vinio.haze.presentation.screens.BottomNavBar
 import com.vinio.haze.presentation.screens.BottomNavItem
-import com.vinio.haze.presentation.screens.ProfileScreen
-import com.vinio.haze.presentation.screens.SettingsScreen
+import com.vinio.haze.presentation.screens.achievementsScreen.AchievementsScreen
 import com.vinio.haze.presentation.screens.cityScreens.CityListScreen
 import com.vinio.haze.presentation.screens.cityScreens.cityDetails.CityDetailsScreen
 import com.vinio.haze.presentation.screens.poiScreens.PoiListScreen
 import com.vinio.haze.presentation.screens.poiScreens.poiDetails.PoiDetailsScreen
+import com.vinio.haze.presentation.screens.settingsScreen.SettingsScreen
 import com.vinio.haze.presentation.startScreen.StartScreen
 
 @Composable
@@ -87,7 +87,7 @@ fun AppNavigation() {
             }
 
             composable(BottomNavItem.Achievements.route) {
-                ProfileScreen()
+                AchievementsScreen(navController = navController)
             }
 
             composable(BottomNavItem.Settings.route) {

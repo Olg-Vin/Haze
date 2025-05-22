@@ -11,6 +11,7 @@ import com.vinio.haze.domain.model.Place
 import com.vinio.haze.domain.repository.LocationPointRepository
 import com.vinio.haze.domain.repository.PlaceRepository
 import com.vinio.haze.infrastructure.db.repository.PlaceRepositoryImpl
+import com.vinio.haze.presentation.screens.settingsScreen.SettingsPreferences
 import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Geometry
@@ -42,6 +43,7 @@ class YandexMapViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val repository: LocationPointRepository,
     private val placeRepository: PlaceRepository,
+    private val settingsPreferences: SettingsPreferences,
 ) : ViewModel() {
     private val searchManager =
         SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE)
@@ -75,7 +77,24 @@ class YandexMapViewModel @Inject constructor(
         _zoomLevel.value = zoom
     }
 
+    private val _fogOpacity = MutableStateFlow(50f)
+    val fogOpacity: StateFlow<Float> = _fogOpacity
+
+    private val _showPOI = MutableStateFlow(true)
+    val showPOI: StateFlow<Boolean> = _showPOI
+
     init {
+        viewModelScope.launch {
+            settingsPreferences.fogOpacityFlow.collect {
+                _fogOpacity.value = it
+            }
+        }
+        viewModelScope.launch {
+            settingsPreferences.showPOIFlow.collect {
+                _showPOI.value = it
+            }
+        }
+
         viewModelScope.launch {
             _boundingBoxFlow
                 .debounce(500)

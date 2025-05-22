@@ -48,4 +48,8 @@ class PlaceRepositoryImpl @Inject constructor(
     override suspend fun updatePlaceDescription(id: String, description: String) {
         placeDao.updateDescription(id, description)
     }
+
+    override fun getOpenedPoiCount(): Flow<Int> {
+        return placeDao.getOpenedPoiCount()
+    }
 }

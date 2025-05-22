@@ -4,12 +4,16 @@ import android.app.Activity
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -30,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -97,6 +102,9 @@ fun YandexMapScreen(
     val locationPoints by viewModel.locationPoints.observeAsState(emptyList())
     var isFollowingUser by remember { mutableStateOf(true) }
 
+    val fogOpacity by viewModel.fogOpacity.collectAsState()
+    val showPOI by viewModel.showPOI.collectAsState()
+
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
             modifier = Modifier
@@ -104,73 +112,104 @@ fun YandexMapScreen(
                 .zIndex(0f),
             factory = { mapView }
         )
-        IconButton(
-            onClick = { navController.navigate(BottomNavItem.CityList.route) },
+
+        // --- Первая кнопка с увеличением и фоном ---
+        Box(
             modifier = Modifier
                 .padding(16.dp, 60.dp, 16.dp, 16.dp)
                 .align(Alignment.TopStart)
-                .clip(CircleShape)
+                .size(64.dp) // увеличиваем размер контейнера 1.5 раза
+                .background(
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.avatar), // аватар
-                contentDescription = "Profile",
-                modifier = Modifier.size(64.dp)
-            )
+            IconButton(
+                onClick = { navController.navigate(BottomNavItem.CityList.route) },
+                modifier = Modifier
+                    .size(64.dp) // сама кнопка 64.dp, внутри контейнера 96.dp
+                    .clip(CircleShape)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.avatar),
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
-        Column(
+        // --- Группа из трех кнопок с общим фоном и смещением вниз ---
+        Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp)
+                .offset(y = 140.dp) // сдвиг вниз на 40.dp, регулируй под нужный отступ
+                .background(
+                    color = Color.White.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(vertical = 8.dp, horizontal = 4.dp)
         ) {
-            IconButton(onClick = {
-                val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
-                mapView.mapWindow.map.move(
-                    CameraPosition(
-                        mapView.mapWindow.map.cameraPosition.target,
-                        currentZoom + 1f,
-                        0f,
-                        0f
-                    ),
-                    Animation(Animation.Type.SMOOTH, 0.3f),
-                    null
-                )
-            }) {
-                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Zoom In")
-            }
-            IconButton(onClick = {
-                val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
-                mapView.mapWindow.map.move(
-                    CameraPosition(
-                        mapView.mapWindow.map.cameraPosition.target,
-                        currentZoom - 1f,
-                        0f,
-                        0f
-                    ),
-                    Animation(Animation.Type.SMOOTH, 0.3f),
-                    null
-                )
-            }) {
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Zoom Out")
-            }
-            IconButton(onClick = {
-                isFollowingUser = !isFollowingUser
-                userLocation?.let { point ->
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = {
+                    val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
                     mapView.mapWindow.map.move(
-                        CameraPosition(point, mapView.mapWindow.map.cameraPosition.zoom, 0f, 0f),
-                        Animation(Animation.Type.SMOOTH, 1.0f),
+                        CameraPosition(
+                            mapView.mapWindow.map.cameraPosition.target,
+                            currentZoom + 1f,
+                            0f,
+                            0f
+                        ),
+                        Animation(Animation.Type.SMOOTH, 0.3f),
                         null
                     )
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.plus_v),
+                        contentDescription = "Zoom In"
+                    )
                 }
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Send,
-                    contentDescription = "Locate",
-                    tint = if (isFollowingUser) Color.Blue else Color.Gray
-                )
+                IconButton(onClick = {
+                    val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
+                    mapView.mapWindow.map.move(
+                        CameraPosition(
+                            mapView.mapWindow.map.cameraPosition.target,
+                            currentZoom - 1f,
+                            0f,
+                            0f
+                        ),
+                        Animation(Animation.Type.SMOOTH, 0.3f),
+                        null
+                    )
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.minus_v),
+                        contentDescription = "Zoom Out"
+                    )
+                }
+                IconButton(onClick = {
+                    isFollowingUser = !isFollowingUser
+                    userLocation?.let { point ->
+                        mapView.mapWindow.map.move(
+                            CameraPosition(point, mapView.mapWindow.map.cameraPosition.zoom, 0f, 0f),
+                            Animation(Animation.Type.SMOOTH, 1.0f),
+                            null
+                        )
+                    }
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.location_v),
+                        contentDescription = "Locate",
+                        tint = if (isFollowingUser) Color.Blue else Color.Gray
+                    )
+                }
             }
         }
     }
+
 
     LaunchedEffect(Unit) {
         mapView.mapWindow.map.mapType = MapType.MAP
@@ -190,7 +229,7 @@ fun YandexMapScreen(
         }
     }
 
-    LaunchedEffect(locationPoints, fogPolygonObj) {
+    LaunchedEffect(locationPoints, fogPolygonObj, fogOpacity) {
         if (locationPoints.isNotEmpty() && fogPolygonObj != null) {
             val polygons = locationPoints.map { point ->
                 makeSquarePolygon(Point(point.cellLat, point.cellLon))
@@ -208,12 +247,20 @@ fun YandexMapScreen(
                 }
             }
 
+            fogPolygonObj?.fillColor = Color(
+                alpha = (fogOpacity / 100f * 0.96f).coerceIn(0f, 1f), // 0.96f для исходной прозрачности 0xF5 в коде
+                red = 0.8f, green = 0.8f, blue = 0.8f
+            ).toArgb()
+
             updateFogPolygon(fogPolygonObj, Polygon(worldOuterRing, visibleAreas.toList()))
         }
     }
 
-    LaunchedEffect(poiItems, zoom) {
+    LaunchedEffect(poiItems, zoom, showPOI) {
         poiCollection.clear()
+
+        if (!showPOI) return@LaunchedEffect
+
         val placemarkCollection = poiCollection.addCollection()
 
         val scale = when {

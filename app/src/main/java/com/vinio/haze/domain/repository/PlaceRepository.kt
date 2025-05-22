@@ -13,4 +13,6 @@ interface PlaceRepository {
     suspend fun getCityById(id: Int): Place?
     suspend fun getPlaceById(id: String): Place
     suspend fun updatePlaceDescription(id: String, description: String)
+
+    fun getOpenedPoiCount(): Flow<Int>
 }
