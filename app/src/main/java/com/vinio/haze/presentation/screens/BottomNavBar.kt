@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -29,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.vinio.haze.R
 import com.vinio.haze.presentation.navigation.Screen
 
@@ -37,15 +37,11 @@ fun BottomNavBar(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
-    val items = listOf(
-        BottomNavItem.CityList,
-        BottomNavItem.PoiList,
-        BottomNavItem.Achievements,
-        BottomNavItem.Settings,
-    )
-
     val barHeight = 76.dp
     val circleDiameter = 72.dp
+
+    val currentRoute = navController
+        .currentBackStackEntryAsState().value?.destination?.route
 
     Box(
         modifier = modifier
@@ -104,28 +100,38 @@ fun BottomNavBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
-                onClick = { navController.navigate(items[0].route) },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = items[0].icon!!),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.Black
-                )
-            }
-            IconButton(
-                onClick = { navController.navigate(items[1].route) },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = items[1].icon!!),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.Black
-                )
-            }
+            AnimatedNavIcon(
+                iconRes = BottomNavItem.CityList.icon!!,
+                isSelected = currentRoute == BottomNavItem.CityList.route,
+                onClick = {
+                    if (currentRoute != BottomNavItem.CityList.route) {
+                        navController.navigate(BottomNavItem.CityList.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            )
+
+            AnimatedNavIcon(
+                iconRes = BottomNavItem.PoiList.icon!!,
+                isSelected = currentRoute == BottomNavItem.PoiList.route,
+                onClick = {
+                    if (currentRoute != BottomNavItem.PoiList.route) {
+                        navController.navigate(BottomNavItem.PoiList.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            )
+
 
             Spacer(modifier = Modifier.width(circleDiameter - 54.dp))
             VerticalDivider(
@@ -136,28 +142,37 @@ fun BottomNavBar(
             )
             Spacer(modifier = Modifier.width(circleDiameter - 54.dp))
 
-            IconButton(
-                onClick = { navController.navigate(items[2].route) },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = items[2].icon!!),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.Black
-                )
-            }
-            IconButton(
-                onClick = { navController.navigate(items[3].route) },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = items[3].icon!!),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.Black
-                )
-            }
+            AnimatedNavIcon(
+                iconRes = BottomNavItem.Achievements.icon!!,
+                isSelected = currentRoute == BottomNavItem.Achievements.route,
+                onClick = {
+                    if (currentRoute != BottomNavItem.Achievements.route) {
+                        navController.navigate(BottomNavItem.Achievements.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            )
+
+            AnimatedNavIcon(
+                iconRes = BottomNavItem.Settings.icon!!,
+                isSelected = currentRoute == BottomNavItem.Settings.route,
+                onClick = {
+                    if (currentRoute != BottomNavItem.Settings.route) {
+                        navController.navigate(BottomNavItem.Settings.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            )
         }
     }
 }

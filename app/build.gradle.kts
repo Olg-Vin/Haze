@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.kotlinx.serialization.json)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("androidx.compose.animation:animation-android:1.8.2")
 
 //    Location
     implementation(libs.androidx.lifecycle.livedata.ktx)

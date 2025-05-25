@@ -1,8 +1,12 @@
 package com.vinio.haze.presentation.navigation
 
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ListItemDefaults.containerColor
-import androidx.compose.material3.ListItemDefaults.contentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +29,7 @@ import com.vinio.haze.presentation.screens.poiScreens.poiDetails.PoiDetailsScree
 import com.vinio.haze.presentation.screens.settingsScreen.SettingsScreen
 import com.vinio.haze.presentation.startScreen.StartScreen
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
@@ -52,7 +57,9 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding)
         ) {
             // Экраны без BottomNav
-            composable(Screen.Check.route) {
+            composable(
+                route = Screen.Check.route
+            ) {
                 PermissionCheckScreen(
                     onPermissionsGranted = {
                         navController.navigate(Screen.Map.route) {
@@ -67,7 +74,9 @@ fun AppNavigation() {
                 )
             }
 
-            composable(Screen.Start.route) {
+            composable(
+                route = Screen.Start.route
+            ) {
                 StartScreen(
                     onPermissionsGranted = {
                         navController.navigate(Screen.Map.route) {
@@ -77,28 +86,134 @@ fun AppNavigation() {
                 )
             }
 
-            composable(Screen.Map.route) {
+            composable(
+                route = Screen.Map.route
+            ) {
                 YandexMapScreen(navController = navController)
             }
 
             // Экраны BottomNav
-            composable(BottomNavItem.CityList.route) {
+            composable(
+                route = BottomNavItem.CityList.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                }
+            ) {
                 CityListScreen(navController = navController)
             }
 
-            composable(BottomNavItem.PoiList.route) {
+            composable(
+                route = BottomNavItem.PoiList.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                }
+            ) {
                 PoiListScreen(navController = navController)
             }
 
-            composable(BottomNavItem.Achievements.route) {
+            composable(
+                route = BottomNavItem.Achievements.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                }
+            ) {
                 AchievementsScreen(navController = navController)
             }
 
-            composable(BottomNavItem.Settings.route) {
+            composable(
+                route = BottomNavItem.Settings.route,
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                }
+            ) {
                 SettingsScreen()
             }
 
-            // Детали POI
+            // Детали
             composable(
                 route = "poiDetails/{poiId}?isCity={isCity}",
                 arguments = listOf(
@@ -107,7 +222,31 @@ fun AppNavigation() {
                         type = NavType.BoolType
                         defaultValue = false
                     }
-                )
+                ),
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                }
             ) { backStackEntry ->
                 val poiId = backStackEntry.arguments?.getString("poiId") ?: return@composable
                 val isCity = backStackEntry.arguments?.getBoolean("isCity") ?: false
@@ -123,7 +262,31 @@ fun AppNavigation() {
                 route = "cityDetails/{cityName}",
                 arguments = listOf(
                     navArgument("cityName") { type = NavType.StringType }
-                )
+                ),
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                },
+                popEnterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(300)
+                    ) + fadeOut()
+                }
             ) { backStackEntry ->
                 val cityName = backStackEntry.arguments?.getString("cityName") ?: return@composable
 
@@ -135,5 +298,6 @@ fun AppNavigation() {
         }
     }
 }
+
 
 
