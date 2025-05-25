@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -30,7 +31,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -128,80 +128,84 @@ fun YandexMapScreen(
                 .zIndex(0f),
             factory = { mapView }
         )
-
-        // Название города
+        // Название города (размытый градиентный фон)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
-                .height(40.dp)
+                .height(90.dp)
                 .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent)
+                    Brush.verticalGradient(
+                        listOf(Color.Black.copy(alpha = 0.42f), Color.Transparent)
                     )
                 )
-                .zIndex(1f),
-            contentAlignment = Alignment.Center
+                .align(Alignment.TopCenter)
+                .zIndex(2f),
+            contentAlignment = Alignment.TopCenter
         ) {
             Text(
                 text = currentCity,
                 color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 30.sp),
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.shadow(4.dp)
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .shadow(4.dp, spotColor = Color.Black)
             )
         }
 
-        // Аватар + уровень
+        // Аватар и уровень
         Box(
             modifier = Modifier
-                .padding(16.dp, 60.dp, 0.dp, 0.dp)
-                .size(64.dp)
-                .background(
-                    color = Color.White.copy(alpha = 0.40f),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .zIndex(2f),
-            contentAlignment = Alignment.Center
+                .padding(start = 14.dp, top = 54.dp)
+                .align(Alignment.TopStart)
+                .width(60.dp)
+                .height(74.dp)
+                .zIndex(3f),
         ) {
-            IconButton(
-                onClick = { navController.navigate(BottomNavItem.CityList.route) },
+            // Прямоугольник с аватаркой
+            Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.20f))
+                    .width(60.dp)
+                    .height(60.dp)
+                    .background(Color.White.copy(alpha = 0.4f), RoundedCornerShape(20.dp)),
+                contentAlignment = Alignment.Center
             ) {
-                if (!userAvatarUrl.isNullOrBlank()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(userAvatarUrl),
-                        contentDescription = "Profile",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.avatar),
-                        contentDescription = "Profile",
-                        modifier = Modifier.fillMaxSize()
-                    )
+                IconButton(
+                    onClick = { navController.navigate(BottomNavItem.CityList.route) },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                ) {
+                    if (!userAvatarUrl.isNullOrBlank()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(userAvatarUrl),
+                            contentDescription = "Profile",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.avatar),
+                            contentDescription = "Profile",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
-//            Уровень пользователя
+            // Уровень
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .offset(y = 12.dp)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.67f),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                    .offset(y = 10.dp)
+                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = userLevel.toString(),
                     color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             }
         }
@@ -259,7 +263,12 @@ fun YandexMapScreen(
                     isFollowingUser = !isFollowingUser
                     userLocation?.let { point ->
                         mapView.mapWindow.map.move(
-                            CameraPosition(point, mapView.mapWindow.map.cameraPosition.zoom, 0f, 0f),
+                            CameraPosition(
+                                point,
+                                mapView.mapWindow.map.cameraPosition.zoom,
+                                0f,
+                                0f
+                            ),
                             Animation(Animation.Type.SMOOTH, 1.0f),
                             null
                         )

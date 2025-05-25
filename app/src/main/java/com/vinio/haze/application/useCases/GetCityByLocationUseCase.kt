@@ -15,7 +15,7 @@ class GetCityByLocationUseCase @Inject constructor(
         try {
             val geocoder = Geocoder(context, Locale.getDefault())
             val address = geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
-            address?.locality // или address?.subAdminArea, если нужна альтернатива
+            address?.locality
         } catch (e: Exception) {
             null
         }
