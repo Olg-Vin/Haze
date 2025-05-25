@@ -9,23 +9,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,19 +35,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.vinio.haze.R
+import com.vinio.haze.diAndUtils.GeometryFactoryEntryPoint
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
-import com.vinio.haze.presentation.navigation.Screen
 import com.vinio.haze.presentation.screens.BottomNavItem
 import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
@@ -59,27 +66,29 @@ import com.yandex.mapkit.map.IconStyle
 import com.yandex.mapkit.map.MapType
 import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.map.PolygonMapObject
-import com.yandex.mapkit.search.Address
-import com.yandex.mapkit.search.BusinessObjectMetadata
-import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.operation.union.CascadedPolygonUnion
 import org.locationtech.jts.geom.Polygon as JtsPolygon
-
-val geometryFactory = GeometryFactory()
 
 @Composable
 fun YandexMapScreen(
     modifier: Modifier = Modifier,
     viewModel: YandexMapViewModel = hiltViewModel(),
     navController: NavController,
-) {
+
+    ) {
     val context = LocalContext.current
     val mapView = rememberMapViewWithLifecycle()
+    val entryPoint = EntryPointAccessors.fromApplication(
+        context.applicationContext,
+        GeometryFactoryEntryPoint::class.java
+    )
+    val geometryFactory = entryPoint.geometryFactory()
+
     val poiItems by viewModel.poiItems.collectAsState()
     val zoom by viewModel.zoomLevel.collectAsState()
     val userLocation by viewModel.userLocation.collectAsState()
@@ -90,6 +99,7 @@ fun YandexMapScreen(
     val fogCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
     var fogPolygonObj by remember { mutableStateOf<PolygonMapObject?>(null) }
     val visibleAreas = remember { mutableStateListOf<LinearRing>() }
+    val visibleAreaVersion = remember { mutableIntStateOf(0) }
     val worldOuterRing = remember {
         LinearRing(
             listOf(
@@ -107,7 +117,9 @@ fun YandexMapScreen(
     val fogOpacity by viewModel.fogOpacity.collectAsState()
     val showPOI by viewModel.showPOI.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()
+    val userAvatarUrl by viewModel.avatarUri.collectAsState()
+    val userLevel by viewModel.userLevel.collectAsState()
+    val currentCity by viewModel.currentCity.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -117,47 +129,96 @@ fun YandexMapScreen(
             factory = { mapView }
         )
 
-        // --- Первая кнопка с увеличением и фоном ---
+        // Название города
         Box(
             modifier = Modifier
-                .padding(16.dp, 60.dp, 16.dp, 16.dp)
-                .align(Alignment.TopStart)
-                .size(64.dp) // увеличиваем размер контейнера 1.5 раза
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .height(40.dp)
                 .background(
-                    color = Color.White.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(12.dp)
-                ),
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent)
+                    )
+                )
+                .zIndex(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = currentCity,
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.shadow(4.dp)
+            )
+        }
+
+        // Аватар + уровень
+        Box(
+            modifier = Modifier
+                .padding(16.dp, 60.dp, 0.dp, 0.dp)
+                .size(64.dp)
+                .background(
+                    color = Color.White.copy(alpha = 0.40f),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .zIndex(2f),
             contentAlignment = Alignment.Center
         ) {
             IconButton(
                 onClick = { navController.navigate(BottomNavItem.CityList.route) },
                 modifier = Modifier
-                    .size(64.dp) // сама кнопка 64.dp, внутри контейнера 96.dp
+                    .size(56.dp)
                     .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.20f))
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.avatar),
-                    contentDescription = "Profile",
-                    modifier = Modifier.fillMaxSize()
+                if (!userAvatarUrl.isNullOrBlank()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(userAvatarUrl),
+                        contentDescription = "Profile",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.avatar),
+                        contentDescription = "Profile",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+//            Уровень пользователя
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = 12.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.67f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = userLevel.toString(),
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        // --- Группа из трех кнопок с общим фоном и смещением вниз ---
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp)
-                .offset(y = 140.dp) // сдвиг вниз на 40.dp, регулируй под нужный отступ
+                .offset(y = 140.dp)
                 .background(
                     color = Color.White.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(16.dp)
                 )
                 .padding(vertical = 8.dp, horizontal = 4.dp)
+                .zIndex(2f)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = {
                     val currentZoom = mapView.mapWindow.map.cameraPosition.zoom
                     mapView.mapWindow.map.move(
@@ -235,27 +296,37 @@ fun YandexMapScreen(
 
     LaunchedEffect(locationPoints, fogPolygonObj, fogOpacity) {
         if (locationPoints.isNotEmpty()
-            && fogPolygonObj != null) {
+            && fogPolygonObj != null
+        ) {
             val polygons = locationPoints.map { point ->
-                makeSquarePolygon(Point(point.cellLat, point.cellLon))
+                makeSquarePolygon(Point(point.cellLat, point.cellLon), geometryFactory)
             }
 
             val union = CascadedPolygonUnion.union(polygons)
 
             visibleAreas.clear()
+            visibleAreaVersion.intValue++
             when (union) {
-                is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union))
+                is JtsPolygon -> visibleAreas
+                    .add(fromJtsPolygon(union, geometryFactory))
+
                 is org.locationtech.jts.geom.MultiPolygon -> {
                     for (i in 0 until union.numGeometries) {
-                        visibleAreas.add(fromJtsPolygon(
-                            union.getGeometryN(i) as JtsPolygon
-                        ))
+                        visibleAreas.add(
+                            fromJtsPolygon(
+                                union.getGeometryN(i) as JtsPolygon,
+                                geometryFactory
+                            )
+                        )
                     }
                 }
             }
 
             fogPolygonObj?.fillColor = Color(
-                alpha = (fogOpacity / 100f * 0.96f).coerceIn(0f, 1f), // 0.96f для исходной прозрачности 0xF5 в коде
+                alpha = (fogOpacity / 100f * 0.96f).coerceIn(
+                    0f,
+                    1f
+                ), // 0.96f для исходной прозрачности 0xF5 в коде
                 red = 0.8f, green = 0.8f, blue = 0.8f
             ).toArgb()
 
@@ -266,7 +337,7 @@ fun YandexMapScreen(
         }
     }
 
-    LaunchedEffect(poiItems, zoom, showPOI) {
+    LaunchedEffect(poiItems, zoom, showPOI, visibleAreaVersion.value) {
         poiCollection.clear()
 
         if (!showPOI) return@LaunchedEffect
@@ -281,72 +352,26 @@ fun YandexMapScreen(
         }
 
         poiItems.forEach { item ->
-            val geometryPoint = item.obj?.geometry?.firstOrNull()?.point ?: return@forEach
-            val point = Point(geometryPoint.latitude, geometryPoint.longitude)
-
-            val isInVisibleArea = visibleAreas.any { ring ->
-                toJtsPolygon(ring.points).contains(
-                    geometryFactory.createPoint(
-                        Coordinate(
-                            point.longitude,
-                            point.latitude
+            viewModel.processPoiItem(item, visibleAreas) { place, point ->
+                val placemark = placemarkCollection.addPlacemark().apply {
+                    geometry = point
+                    userData = place
+                    setIcon(
+                        ImageProvider.fromResource(
+                            context,
+                            if (place != null) R.drawable.ic_marker else R.drawable.ic_marker_gray
                         )
                     )
-                )
-            }
-
-            val name = item.obj?.name?.toString().orEmpty()
-
-            val metadata = item.obj?.metadataContainer
-            val toponymMetadata = metadata?.getItem(ToponymObjectMetadata::class.java)
-            val toponymAddress = toponymMetadata?.address?.formattedAddress
-            val business = metadata?.getItem(BusinessObjectMetadata::class.java)
-            val businessAddress = business?.address?.formattedAddress
-            val address = businessAddress ?: toponymAddress
-            val cityFromToponym = toponymMetadata?.address?.components
-                ?.firstOrNull { it.kinds.contains(Address.Component.Kind.LOCALITY) }
-                ?.name
-
-            val cityFromBusiness = business?.address?.components
-                ?.firstOrNull { component ->
-                    component.kinds.any { kind ->
-                        kind == Address.Component.Kind.LOCALITY || kind == Address.Component.Kind.DISTRICT
-                    }
-                }?.name
-
-            val city = cityFromBusiness ?: cityFromToponym
-
-            Log.d("City", city.toString())
-            Log.d("Address", address.toString())
-
-            if (isInVisibleArea) {
-                val place = Place(null, name, city, address, null, point.latitude, point.longitude)
-
-                coroutineScope.launch {
-                    viewModel.trySavePlace(place)
-                }
-
-                placemarkCollection.addPlacemark().apply {
-                    geometry = point
-                    setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker))
-                    userData = place
-                    setIconStyle(IconStyle().apply {
-                        this.scale = scale
-                        this.anchor?.set(0.5f, 1.0f)
-                    })
-                }
-            } else {
-                placemarkCollection.addPlacemark().apply {
-                    geometry = point
-                    setIcon(ImageProvider.fromResource(context, R.drawable.ic_marker_gray))
-                    userData = null
-                    setIconStyle(IconStyle().apply {
-                        this.scale = scale
-                        this.anchor?.set(0.5f, 1.0f)
-                    })
+                    setIconStyle(
+                        IconStyle().apply {
+                            this.scale = scale
+                            this.anchor?.set(0.5f, 1.0f)
+                        }
+                    )
                 }
             }
         }
+
         placemarkCollection.addTapListener { mapObject, _ ->
             val tappedPlace = mapObject.userData as? Place ?: return@addTapListener false
             Toast.makeText(context, tappedPlace.name, Toast.LENGTH_SHORT).show()
@@ -384,19 +409,24 @@ fun YandexMapScreen(
                 )
             }
 
-            val newPolygon = makeSquarePolygon(point)
+            val newPolygon = makeSquarePolygon(point, geometryFactory)
             val union =
                 CascadedPolygonUnion.union(
-                    listOf(newPolygon) + visibleAreas.map { toJtsPolygon(it.points) }
+                    listOf(newPolygon) + visibleAreas.map {
+                        toJtsPolygon(it.points, geometryFactory)
+                    }
                 )
 
             visibleAreas.clear()
             when (union) {
-                is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union))
+                is JtsPolygon -> visibleAreas.add(fromJtsPolygon(union, geometryFactory))
                 is org.locationtech.jts.geom.MultiPolygon -> {
                     for (i in 0 until union.numGeometries) {
-                        visibleAreas.add(fromJtsPolygon(
-                            union.getGeometryN(i) as JtsPolygon)
+                        visibleAreas.add(
+                            fromJtsPolygon(
+                                union.getGeometryN(i) as JtsPolygon,
+                                geometryFactory
+                            )
                         )
                     }
                 }
@@ -451,7 +481,11 @@ private suspend fun animatePlacemarkMove(placemark: PlacemarkMapObject, target: 
     }
 }
 
-fun makeSquarePolygon(center: Point, sideMeters: Double = 300.0): JtsPolygon {
+fun makeSquarePolygon(
+    center: Point,
+    geometryFactory: GeometryFactory,
+    sideMeters: Double = 300.0
+): JtsPolygon {
     val half = sideMeters / 2.0
     val dx = half / (40075000 * Math.cos(center.latitude * Math.PI / 180) / 360)
     val dy = half / 111320.0
@@ -463,16 +497,16 @@ fun makeSquarePolygon(center: Point, sideMeters: Double = 300.0): JtsPolygon {
         Point(center.latitude + dy, center.longitude - dx),
         Point(center.latitude - dy, center.longitude - dx) // замыкаем
     )
-    return toJtsPolygon(points)
+    return toJtsPolygon(points, geometryFactory)
 }
 
-fun toJtsPolygon(points: List<Point>): JtsPolygon {
+fun toJtsPolygon(points: List<Point>, geometryFactory: GeometryFactory): JtsPolygon {
     val coordinates = points.map { Coordinate(it.longitude, it.latitude) }.toTypedArray()
     val shell = geometryFactory.createLinearRing(coordinates)
     return geometryFactory.createPolygon(shell)
 }
 
-fun fromJtsPolygon(jtsPolygon: JtsPolygon): LinearRing {
+fun fromJtsPolygon(jtsPolygon: JtsPolygon, geometryFactory: GeometryFactory): LinearRing {
     return LinearRing(jtsPolygon.exteriorRing.coordinates.map { Point(it.y, it.x) })
 }
 

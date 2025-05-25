@@ -1,7 +1,6 @@
 package com.vinio.haze.diAndUtils
 
 import android.content.Context
-import androidx.room.Room
 import com.google.android.gms.location.LocationServices
 import com.vinio.haze.domain.adapter.AiRequest
 import com.vinio.haze.domain.adapter.MapRequest
@@ -11,7 +10,6 @@ import com.vinio.haze.domain.repository.LocationPointRepository
 import com.vinio.haze.domain.repository.PlaceRepository
 import com.vinio.haze.infrastructure.adapter.AiRequestImpl
 import com.vinio.haze.infrastructure.adapter.MapRequestImpl
-import com.vinio.haze.infrastructure.db.AppDatabase
 import com.vinio.haze.infrastructure.db.dao.LocationPointDao
 import com.vinio.haze.infrastructure.db.dao.PlaceDao
 import com.vinio.haze.infrastructure.db.repository.LocationPointRepositoryImpl
@@ -23,6 +21,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import org.locationtech.jts.geom.GeometryFactory
 import javax.inject.Singleton
 
 @Module
@@ -64,7 +63,7 @@ object AppModule {
     @Singleton
     fun provideLocationPointRepository(
         locationPointDao: LocationPointDao
-    ) : LocationPointRepository {
+    ): LocationPointRepository {
         return LocationPointRepositoryImpl(locationPointDao)
     }
 
@@ -72,33 +71,8 @@ object AppModule {
     @Singleton
     fun providePlaceRepository(
         placeDao: PlaceDao
-    ) : PlaceRepository {
+    ): PlaceRepository {
         return PlaceRepositoryImpl(placeDao)
-    }
-
-    @Provides
-    @Singleton
-    fun providePlaceDao(
-        appDatabase: AppDatabase
-    ): PlaceDao {
-        return appDatabase.placeDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideLocationDao(
-        appDatabase: AppDatabase
-    ): LocationPointDao {
-        return appDatabase.locationDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideAppDatabase(
-        @ApplicationContext context: Context
-    ): AppDatabase {
-        return Room.databaseBuilder(context, AppDatabase::class.java, "places.db")
-            .build()
     }
 
     @Provides
@@ -114,6 +88,12 @@ object AppModule {
     fun provideMapRequest(
     ): MapRequest {
         return MapRequestImpl()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGeometryFactory(): GeometryFactory {
+        return GeometryFactory()
     }
 }
 

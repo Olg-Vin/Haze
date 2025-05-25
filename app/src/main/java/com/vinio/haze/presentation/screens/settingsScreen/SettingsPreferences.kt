@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -18,12 +19,14 @@ class SettingsPreferences(private val context: Context) {
         val USERNAME_KEY = stringPreferencesKey("username")
         val FOG_OPACITY_KEY = floatPreferencesKey("fog_opacity")
         val SHOW_POI_KEY = booleanPreferencesKey("show_poi")
+        val USER_LEVEL_KEY = intPreferencesKey("user_level")
     }
 
     val avatarUriFlow: Flow<String?> = context.dataStore.data.map { it[AVATAR_URI_KEY] }
     val usernameFlow: Flow<String?> = context.dataStore.data.map { it[USERNAME_KEY] }
     val fogOpacityFlow: Flow<Float> = context.dataStore.data.map { it[FOG_OPACITY_KEY] ?: 50f }
     val showPOIFlow: Flow<Boolean> = context.dataStore.data.map { it[SHOW_POI_KEY] ?: true }
+    val userLevelFlow: Flow<Int> = context.dataStore.data.map { it[USER_LEVEL_KEY] ?: 1 }
 
     suspend fun saveAvatarUri(uri: String) {
         context.dataStore.edit { it[AVATAR_URI_KEY] = uri }
@@ -43,5 +46,9 @@ class SettingsPreferences(private val context: Context) {
 
     suspend fun clearAll() {
         context.dataStore.edit { it.clear() }
+    }
+
+    suspend fun saveUserLevel(level: Int) {
+        context.dataStore.edit { it[USER_LEVEL_KEY] = level }
     }
 }
