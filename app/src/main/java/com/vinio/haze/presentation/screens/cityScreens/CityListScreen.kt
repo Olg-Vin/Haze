@@ -21,18 +21,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -51,10 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.vinio.haze.R
-import com.vinio.haze.presentation.navigation.Screen
 import java.net.URLEncoder
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextFieldDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,9 +58,10 @@ fun CityListScreen(
     val cities by viewModel.cities.collectAsState()
     val searchText = remember { mutableStateOf("") }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.White)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
     ) {
         Column(
             modifier = Modifier
@@ -83,11 +76,11 @@ fun CityListScreen(
                     .padding(top = 18.dp, bottom = 10.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowLeft,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     modifier = Modifier
                         .size(28.dp)
-                        .clickable { /*navController.popBackStack()*/ }
+                        .clickable { }
                 )
                 Spacer(modifier = Modifier.width(2.dp))
                 Text(
@@ -104,11 +97,17 @@ fun CityListScreen(
                     .height(44.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
-                    .border(width = 1.dp, color = Color.LightGray, shape = RoundedCornerShape(20.dp))
+                    .border(
+                        width = 1.dp,
+                        color = Color.LightGray,
+                        shape = RoundedCornerShape(20.dp)
+                    )
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 8.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 16.dp, end = 8.dp)
                 ) {
                     BasicTextField(
                         value = searchText.value,

@@ -1,10 +1,13 @@
 package com.vinio.haze.presentation.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ListItemDefaults.containerColor
+import androidx.compose.material3.ListItemDefaults.contentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -40,7 +43,8 @@ fun AppNavigation() {
             if (currentRoute in bottomNavRoutes) {
                 BottomNavBar(navController = navController)
             }
-        }
+        },
+        containerColor = Color.White,
     ) { innerPadding ->
         NavHost(
             navController = navController,
