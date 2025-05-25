@@ -3,12 +3,14 @@ package com.vinio.haze.diAndUtils
 import android.content.Context
 import androidx.room.Room
 import com.google.android.gms.location.LocationServices
-import com.vinio.haze.domain.ai.AiRequest
+import com.vinio.haze.domain.adapter.AiRequest
+import com.vinio.haze.domain.adapter.MapRequest
 import com.vinio.haze.domain.location.LocationClient
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.repository.LocationPointRepository
 import com.vinio.haze.domain.repository.PlaceRepository
-import com.vinio.haze.infrastructure.ai.AiRequestImpl
+import com.vinio.haze.infrastructure.adapter.AiRequestImpl
+import com.vinio.haze.infrastructure.adapter.MapRequestImpl
 import com.vinio.haze.infrastructure.db.AppDatabase
 import com.vinio.haze.infrastructure.db.dao.LocationPointDao
 import com.vinio.haze.infrastructure.db.dao.PlaceDao
@@ -105,6 +107,13 @@ object AppModule {
         @ApplicationContext context: Context
     ): SettingsPreferences {
         return SettingsPreferences(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMapRequest(
+    ): MapRequest {
+        return MapRequestImpl()
     }
 }
 

@@ -5,12 +5,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vinio.haze.application.useCases.FetchPoiUseCase
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.model.LocationPoint
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.domain.repository.LocationPointRepository
 import com.vinio.haze.domain.repository.PlaceRepository
-import com.vinio.haze.infrastructure.db.repository.PlaceRepositoryImpl
 import com.vinio.haze.presentation.screens.settingsScreen.SettingsPreferences
 import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
@@ -32,17 +32,14 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.operation.union.CascadedPolygonUnion
-import org.locationtech.jts.geom.Polygon as JtsPolygon
+import kotlin.onSuccess
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class YandexMapViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val repository: LocationPointRepository,
-    private val placeRepository: PlaceRepository,
+    private val fetchPoiUseCase: FetchPoiUseCase,
     private val settingsPreferences: SettingsPreferences,
 ) : ViewModel() {
     private val searchManager =
@@ -98,7 +95,7 @@ class YandexMapViewModel @Inject constructor(
         viewModelScope.launch {
             _boundingBoxFlow
                 .debounce(500)
-                .collect { bbox -> searchInViewport(bbox) }
+                .collect { bbox -> handlePoiSearch(bbox) }
         }
 
         viewModelScope.launch {
@@ -123,40 +120,24 @@ class YandexMapViewModel @Inject constructor(
         }
     }
 
-    private fun searchInViewport(boundingBox: BoundingBox) {
-        val key = boundingBox.key()
-
-        // Если уже искали — используем кеш
-        searchCache[key]?.let { cached ->
-            Log.d("Search", "Using cached result for $key")
-            _poiItems.value = cached
+    private suspend fun handlePoiSearch(bbox: BoundingBox) {
+        val key = bbox.key()
+        if (searchCache.containsKey(key)) {
+            _poiItems.value = searchCache[key]!!
             return
         }
 
-        Log.d("Search", "Ищем POI в bbox: ${boundingBox.toFormatString()}")
-        currentSession?.cancel()
-
-        val options = SearchOptions().apply {
-            searchTypes = SearchType.BIZ.value
-            resultPageSize = 50
+        val result = fetchPoiUseCase.execute(bbox)
+        result.onSuccess { items ->
+            searchCache[key] = items
+            _poiItems.value = items
+        }.onFailure { e ->
+            Log.e("POI", "Failed to fetch POI: ${e.message}", e)
         }
+    }
 
-        currentSession = searchManager.submit(
-            "достопримечательности",
-            Geometry.fromBoundingBox(boundingBox),
-            options,
-            object : Session.SearchListener {
-                override fun onSearchResponse(response: Response) {
-                    Log.d("SearchDebug", "response: ${response.collection.children.size}")
-                    _poiItems.value = response.collection.children
-                    Log.d("SearchDebug", "${_poiItems.value}")
-                }
-
-                override fun onSearchError(error: Error) {
-                    Log.e("Search", "Ошибка поиска: $error")
-                }
-            }
-        )
+    suspend fun trySavePlace(place: Place) {
+        fetchPoiUseCase.savePlaceIfNotExists(place)
     }
 
     private fun BoundingBox.key(): String {
@@ -167,19 +148,5 @@ class YandexMapViewModel @Inject constructor(
         val bl = southWest.round()
         val tr = northEast.round()
         return "${bl.latitude},${bl.longitude}_${tr.latitude},${tr.longitude}"
-    }
-
-    fun savePlaceIfNeeded(place: Place) {
-        viewModelScope.launch {
-            val id = generatePlaceId(place.name, place.lat, place.lon)
-            val exists = placeRepository.exists(id)
-            if (!exists) {
-                placeRepository.savePlace(place.copy(id = id))
-            }
-        }
-    }
-
-    private fun generatePlaceId(name: String, lat: Double, lon: Double): String {
-        return "${name}_${lat}_${lon}".hashCode().toString()
     }
 }

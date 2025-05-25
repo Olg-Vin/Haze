@@ -29,6 +29,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +64,7 @@ import com.yandex.mapkit.search.BusinessObjectMetadata
 import com.yandex.mapkit.search.ToponymObjectMetadata
 import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.operation.union.CascadedPolygonUnion
@@ -104,6 +106,8 @@ fun YandexMapScreen(
 
     val fogOpacity by viewModel.fogOpacity.collectAsState()
     val showPOI by viewModel.showPOI.collectAsState()
+
+    val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -318,7 +322,9 @@ fun YandexMapScreen(
             if (isInVisibleArea) {
                 val place = Place(null, name, city, address, null, point.latitude, point.longitude)
 
-                viewModel.savePlaceIfNeeded(place)
+                coroutineScope.launch {
+                    viewModel.trySavePlace(place)
+                }
 
                 placemarkCollection.addPlacemark().apply {
                     geometry = point

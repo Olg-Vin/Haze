@@ -1,7 +1,7 @@
-package com.vinio.haze.infrastructure.ai
+package com.vinio.haze.infrastructure.adapter
 
 
-import com.vinio.haze.domain.ai.AiRequest
+import com.vinio.haze.domain.adapter.AiRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
