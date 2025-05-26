@@ -3,15 +3,20 @@ package com.vinio.haze.presentation.screens.settingsScreen
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,17 +24,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,14 +45,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
+import com.vinio.haze.R
+import kotlin.math.absoluteValue
 
 @Composable
 fun SettingsScreen(
@@ -57,176 +71,428 @@ fun SettingsScreen(
     val username by viewModel.username.collectAsState()
     val fogOpacity by viewModel.fogOpacity.collectAsState()
     val showPOI by viewModel.showPOI.collectAsState()
-    val showDialog = remember { mutableStateOf(false) }
-
-    var usernameInput by remember { mutableStateOf(username ?: "") }
-    val isUsernameChanged = usernameInput != (username ?: "")
+    val progress = 0.7f
+//    val notifyAchievements by viewModel.notifyAchievements.collectAsState()
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.setAvatarUri(it) }
-    }
+    ) { uri: Uri? -> uri?.let { viewModel.setAvatarUri(it) } }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+//    val fogColor by viewModel.fogColorFlow.collectAsState()
+
+    val ringColor = Color.Black
+    val circleRadius = 64.dp
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 18.dp)
+    ) {
+        // Ранг, буква, точки
+
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.LightGray, shape = RoundedCornerShape(8.dp))
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 18.dp)
         ) {
-            if (avatarUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(avatarUri),
-                    contentDescription = "Avatar",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .clickable { launcher.launch("image/*") },
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Avatar",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray)
-                        .clickable { launcher.launch("image/*") }
-                        .padding(12.dp),
-                    tint = Color.White
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .padding(top = 8.dp, bottom = 12.dp)
             ) {
-                OutlinedTextField(
-                    value = usernameInput,
-                    onValueChange = { usernameInput = it },
-                    label = { Text("Имя пользователя") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-
-                if (isUsernameChanged) {
-                    IconButton(
-                        onClick = { viewModel.setUsername(usernameInput) },
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Сохранить имя",
-                            tint = Color.Green
+                Canvas(
+                    modifier = Modifier.size(circleRadius * 2)
+                ) {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val smallRadius = size.width / 2f - 10.dp.toPx()
+                    for (i in 0 until 12) {
+                        val angle = Math.toRadians(i * 30.0)
+                        drawCircle(
+                            color = ringColor,
+                            radius = 3.dp.toPx(),
+                            center = Offset(
+                                (cx + smallRadius * kotlin.math.cos(angle)).toFloat(),
+                                (cy + smallRadius * kotlin.math.sin(angle)).toFloat()
+                            )
                         )
                     }
                 }
+                Text(
+                    text = "F",
+                    fontSize = 58.sp,
+                    fontWeight = FontWeight.Light,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                Modifier.padding(top = 50.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Ранг")
+                Text("Исследователя")
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(24.dp)
-        )
-        Text(
-            "Настройки",
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp
-        )
-        Spacer(
-            modifier = Modifier.height(16.dp)
+        UserProfileCard(
+            username = username,
+            avatarUri = avatarUri,
+            progress = progress,
+            onNameChange = { viewModel.setUsername(it) },
+            onAvatarClick = { launcher.launch("image/*") }
         )
 
-        Text("Прозрачность тумана войны: ${fogOpacity.toInt()}%")
+        Spacer(modifier = Modifier.height(16.dp))
+
+        FogColorSelector(
+            selectedColor = /*fogColor*/ Color(0xFF9575CD),
+            onColorSelected = { /*viewModel.setFogColor(it)*/ }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+        // Слайдер для тумана
         FogOpacitySlider(
-            fogOpacity = fogOpacity,
-            onFogOpacityChange = { viewModel.setFogOpacity(it) }
+            value = fogOpacity,
+            onValueChange = { viewModel.setFogOpacity(it) }
         )
 
-        Spacer(
-            modifier = Modifier.height(16.dp)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        CheckBoxRow(
+            text = "Показывать точки интереса",
+            checked = showPOI,
+            onCheckedChange = { viewModel.setShowPOI(it) }
         )
 
-        // Show POI toggle
-        Row(
+        CheckBoxRow(
+            text = "Уведомлять о достижениях",
+            checked = /*notifyAchievements*/ true,
+            onCheckedChange = { /*viewModel.setNotifyAchievements(it)*/ }
+        )
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FogOpacitySlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var sliderPosition by remember { mutableFloatStateOf(value) }
+
+    LaunchedEffect(value) {
+        if ((sliderPosition - value).absoluteValue > 0.01f) {
+            sliderPosition = value
+        }
+    }
+
+    Column(modifier = modifier) {
+        Text(
+            text = "Прозрачность тумана",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Normal
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = 0f..1f,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Gray.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Показ POI на карте")
-            Switch(
-                checked = showPOI,
-                onCheckedChange = { viewModel.setShowPOI(it) }
-            )
-        }
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
+                .height(36.dp),
+            colors = SliderDefaults.colors(
+                activeTrackColor = Color(0xFFD8D8D8),
+                inactiveTrackColor = Color(0xFFD8D8D8),
+                thumbColor = Color.White
+            ),
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(Color.White, CircleShape)
+                        .border(2.dp, Color.Black, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) { }
+            },
+            track = { state ->
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFD8D8D8))
+                )
+            }
         )
+    }
+}
 
-        // Reset progress
-        Button(
-            onClick = { showDialog.value = true },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Red.copy(alpha = 0.8f),
-                contentColor = Color.White
-            )
+
+@Composable
+fun CheckBoxRow(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Normal
+        )
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Transparent),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Сбросить прогресс", color = Color.White)
-        }
-
-        if (showDialog.value) {
-            AlertDialog(
-                onDismissRequest = { showDialog.value = false },
-                title = { Text("Подтвердите действие") },
-                text = { Text("Вы уверены, что хотите сбросить весь прогресс? Это действие необратимо.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.resetProgress()
-                        showDialog.value = false
-                    }) {
-                        Text("Да")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDialog.value = false }) {
-                        Text("Отмена")
-                    }
+            if (checked) {
+                Canvas(Modifier.size(28.dp)) {
+                    drawLine(
+                        color = Color.Black,
+                        start = Offset(size.width * 0.2f, size.height * 0.5f),
+                        end = Offset(size.width * 0.45f, size.height * 0.8f),
+                        strokeWidth = 4f
+                    )
+                    drawLine(
+                        color = Color.Black,
+                        start = Offset(size.width * 0.45f, size.height * 0.8f),
+                        end = Offset(size.width * 0.8f, size.height * 0.2f),
+                        strokeWidth = 4f
+                    )
                 }
-            )
+            }
         }
     }
 }
 
 @Composable
-fun FogOpacitySlider(
-    fogOpacity: Float,
-    onFogOpacityChange: (Float) -> Unit
+fun FogColorSelector(
+    selectedColor: Color,
+    onColorSelected: (Color) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var sliderPosition by remember { mutableFloatStateOf(fogOpacity) }
+    var popupVisible by remember { mutableStateOf(false) }
+    val colorOptions = listOf(
+        Color(0xFFD3D3D3),
+        Color(0xFFD32F2F),
+        Color(0xFF9575CD),
+        Color(0xFF43EA36),
+        Color(0xFFE573D3),
+        Color(0xFF282425)
+    )
 
-    LaunchedEffect(fogOpacity) {
-        if (fogOpacity != sliderPosition) {
-            sliderPosition = fogOpacity
+    Column(modifier = modifier) {
+        Text("Цвет тумана", fontSize = 18.sp)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(36.dp)
+                .background(selectedColor, RoundedCornerShape(8.dp))
+                .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                .clickable { popupVisible = true }
+        )
+
+        if (popupVisible) {
+            Dialog(
+                onDismissRequest = { popupVisible = false }
+            ) {
+                Box(
+                    Modifier
+                        .background(Color.White, RoundedCornerShape(16.dp))
+                        .border(1.dp, Color.Black, RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Row {
+                            ColorOption(colorOptions[0], onPick = {
+                                onColorSelected(colorOptions[0])
+                                popupVisible = false
+                            })
+                            Spacer(Modifier.width(16.dp))
+                            ColorOption(colorOptions[1], onPick = {
+                                onColorSelected(colorOptions[1])
+                                popupVisible = false
+                            })
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row {
+                            ColorOption(colorOptions[2], onPick = {
+                                onColorSelected(colorOptions[2])
+                                popupVisible = false
+                            })
+                            Spacer(Modifier.width(16.dp))
+                            ColorOption(colorOptions[3], onPick = {
+                                onColorSelected(colorOptions[3])
+                                popupVisible = false
+                            })
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row {
+                            ColorOption(colorOptions[4], onPick = {
+                                onColorSelected(colorOptions[4])
+                                popupVisible = false
+                            })
+                            Spacer(Modifier.width(16.dp))
+                            ColorOption(colorOptions[5], onPick = {
+                                onColorSelected(colorOptions[5])
+                                popupVisible = false
+                            })
+                        }
+                    }
+                }
+            }
         }
     }
+}
 
-    Slider(
-        value = sliderPosition,
-        onValueChange = {
-            sliderPosition = it
-        },
-        onValueChangeFinished = {
-            onFogOpacityChange(sliderPosition)
-        },
-        valueRange = 0f..100f
+@Composable
+fun ColorOption(color: Color, onPick: () -> Unit) {
+    Box(
+        Modifier
+            .size(width = 120.dp, height = 44.dp)
+            .background(color, RoundedCornerShape(12.dp))
+            .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
+            .clickable { onPick() }
     )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UserProfileCard(
+    username: String?,
+    avatarUri: Uri?,
+    progress: Float,
+    onNameChange: (String) -> Unit,
+    onAvatarClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isEditing by remember { mutableStateOf(false) }
+    var editValue by remember { mutableStateOf(username ?: "") }
+
+    Column(modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isEditing) {
+                TextField(
+                    value = editValue,
+                    onValueChange = { editValue = it },
+                    modifier = Modifier.weight(1f),
+                    textStyle = TextStyle(fontSize = 32.sp),
+                    colors = TextFieldDefaults.textFieldColors(containerColor = Color.Transparent),
+                    singleLine = true
+                )
+                IconButton(
+                    onClick = {
+                        onNameChange(editValue)
+                        isEditing = false
+                    }
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = "Сохранить")
+                }
+                IconButton(
+                    onClick = {
+                        editValue = username ?: ""
+                        isEditing = false
+                    }
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Отмена")
+                }
+            } else {
+                Text(
+                    username ?: "",
+                    fontSize = 32.sp,
+                )
+                IconButton(onClick = {
+                    editValue = username ?: ""
+                    isEditing = true
+                }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Редактировать")
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+
+        val avatarSize = 64.dp
+        val corner = 22.dp
+
+        Row(
+            modifier = Modifier
+                .height(avatarSize)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(avatarSize)
+                    .zIndex(2f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(topStart = corner, bottomStart = corner))
+                        .border(
+                            2.dp,
+                            Color.Black,
+                            RoundedCornerShape(topStart = corner, bottomStart = corner)
+                        )
+                        .background(Color.White)
+                        .clickable { onAvatarClick() }
+                )
+                if (avatarUri != null) {
+                    AsyncImage(
+                        model = avatarUri,
+                        contentDescription = "Аватар",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(topStart = corner, bottomStart = corner))
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Плейсхолдер",
+                        modifier = Modifier
+                            .align(Alignment.Center).size(40.dp)
+                            .alpha(0.4f)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .height(avatarSize)
+                    .weight(1f)
+                    .offset(x = (-2).dp)
+                    .clip(RoundedCornerShape(topEnd = corner, bottomEnd = corner))
+                    .border(
+                        width = 2.dp,
+                        color = Color.Black,
+                        shape = RoundedCornerShape(topEnd = corner, bottomEnd = corner)
+                    )
+                    .background(Color(0xFFEAEAEA))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .clip(RoundedCornerShape(topEnd = corner, bottomEnd = corner))
+                        .background(Color(0xFF9575CD))
+                )
+            }
+        }
+    }
 }
 

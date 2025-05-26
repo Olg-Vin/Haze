@@ -28,7 +28,7 @@ class SettingsViewModel @Inject constructor(
     private val _username = MutableStateFlow<String?>(null)
     val username: StateFlow<String?> = _username
 
-    private val _fogOpacity = MutableStateFlow(50f)
+    private val _fogOpacity = MutableStateFlow(150f)
     val fogOpacity: StateFlow<Float> = _fogOpacity
 
     private val _showPOI = MutableStateFlow(true)
