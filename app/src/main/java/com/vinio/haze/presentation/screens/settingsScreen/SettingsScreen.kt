@@ -72,13 +72,12 @@ fun SettingsScreen(
     val fogOpacity by viewModel.fogOpacity.collectAsState()
     val showPOI by viewModel.showPOI.collectAsState()
     val progress = 0.7f
-//    val notifyAchievements by viewModel.notifyAchievements.collectAsState()
+    val notifyAchievements by viewModel.notifyAchievements.collectAsState()
+    val fogColor by viewModel.fogColor.collectAsState()
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? -> uri?.let { viewModel.setAvatarUri(it) } }
-
-//    val fogColor by viewModel.fogColorFlow.collectAsState()
 
     val ringColor = Color.Black
     val circleRadius = 64.dp
@@ -145,9 +144,9 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        FogColorSelector(
-            selectedColor = /*fogColor*/ Color(0xFF9575CD),
-            onColorSelected = { /*viewModel.setFogColor(it)*/ }
+        FogColorSelector (
+            selectedColor = fogColor,
+            onColorSelected = { viewModel.setFogColor(it) }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -167,8 +166,8 @@ fun SettingsScreen(
 
         CheckBoxRow(
             text = "Уведомлять о достижениях",
-            checked = /*notifyAchievements*/ true,
-            onCheckedChange = { /*viewModel.setNotifyAchievements(it)*/ }
+            checked = notifyAchievements,
+            onCheckedChange = { viewModel.setNotifyAchievements(it) }
         )
     }
 }
@@ -184,22 +183,25 @@ fun FogOpacitySlider(
     var sliderPosition by remember { mutableFloatStateOf(value) }
 
     LaunchedEffect(value) {
-        if ((sliderPosition - value).absoluteValue > 0.01f) {
+        if (value != sliderPosition) {
             sliderPosition = value
         }
     }
 
     Column(modifier = modifier) {
         Text(
-            text = "Прозрачность тумана",
+            text = "Прозрачность тумана ${sliderPosition.toInt()}%",
             fontSize = 18.sp,
             fontWeight = FontWeight.Normal
         )
         Spacer(modifier = Modifier.height(4.dp))
         Slider(
             value = value,
-            onValueChange = onValueChange,
-            valueRange = 0f..1f,
+            onValueChange = {
+                sliderPosition = it
+                onValueChange(it)
+            },
+            valueRange = 0f..100f,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(36.dp),

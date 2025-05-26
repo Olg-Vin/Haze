@@ -96,6 +96,7 @@ fun YandexMapScreen(
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
     val poiCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
 
+    val fogColor by viewModel.fogColor.collectAsState()
     val fogCollection = remember { mapView.mapWindow.map.mapObjects.addCollection() }
     var fogPolygonObj by remember { mutableStateOf<PolygonMapObject?>(null) }
     val visibleAreas = remember { mutableStateListOf<LinearRing>() }
@@ -296,11 +297,16 @@ fun YandexMapScreen(
         fogPolygonObj = fogCollection.addPolygon(
             Polygon(worldOuterRing, visibleAreas.toList())
         ).apply {
-            fillColor = 0xF5CCCCCC.toInt()
             strokeColor = 0x00000000.toInt()
             strokeWidth = 0f
             zIndex = 0f
         }
+        applyFogColor(fogPolygonObj, fogColor, fogOpacity)
+        Log.d("Color", "init color ${fogPolygonObj?.fillColor}")
+    }
+
+    LaunchedEffect(fogColor) {
+        applyFogColor(fogPolygonObj, fogColor, fogOpacity)
     }
 
     LaunchedEffect(locationPoints, fogPolygonObj, fogOpacity) {
@@ -331,13 +337,8 @@ fun YandexMapScreen(
                 }
             }
 
-            fogPolygonObj?.fillColor = Color(
-                alpha = (fogOpacity / 100f * 0.96f).coerceIn(
-                    0f,
-                    1f
-                ), // 0.96f для исходной прозрачности 0xF5 в коде
-                red = 0.8f, green = 0.8f, blue = 0.8f
-            ).toArgb()
+            applyFogColor(fogPolygonObj, fogColor, fogOpacity)
+            Log.d("Color", "load with opacity color ${fogPolygonObj?.fillColor}")
 
             updateFogPolygon(
                 fogPolygonObj,
@@ -522,5 +523,11 @@ fun fromJtsPolygon(jtsPolygon: JtsPolygon, geometryFactory: GeometryFactory): Li
 fun updateFogPolygon(fog: PolygonMapObject?, polygon: Polygon) {
     if (fog == null) return
     fog.geometry = polygon
+}
+
+fun applyFogColor(polygon: PolygonMapObject?, color: Color, opacity: Float) {
+    polygon?.fillColor = color.copy(
+        alpha = (opacity / 100f * 0.96f).coerceIn(0f, 1f)
+    ).toArgb()
 }
 

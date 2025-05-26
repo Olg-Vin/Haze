@@ -1,6 +1,8 @@
 package com.vinio.haze.presentation.map
 
 import android.util.Log
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -68,10 +70,20 @@ class YandexMapViewModel @Inject constructor(
     private val _currentCity = MutableStateFlow("...")
     val currentCity: StateFlow<String> = _currentCity
 
+    private val _fogColor = MutableStateFlow(Color(0xFF9575CD))
+    val fogColor: StateFlow<Color> = _fogColor
+
     fun loadLocationPoints() {
         viewModelScope.launch {
             val pointsFromDb = repository.getAllLocationPoints()
             _locationPoints.postValue(pointsFromDb)
+        }
+
+        viewModelScope.launch {
+            settingsPreferences.fogColorFlow.collect { color ->
+                Log.d("Color", "load color ${color.toArgb()}")
+                _fogColor.value = color
+            }
         }
     }
 

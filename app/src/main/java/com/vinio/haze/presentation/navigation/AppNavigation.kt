@@ -54,6 +54,7 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = Screen.Check.route,
+//            startDestination = BottomNavItem.Settings.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             // Экраны без BottomNav
