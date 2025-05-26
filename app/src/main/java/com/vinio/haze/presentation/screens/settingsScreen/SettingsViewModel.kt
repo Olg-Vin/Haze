@@ -1,13 +1,11 @@
 package com.vinio.haze.presentation.screens.settingsScreen
 
-import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vinio.haze.application.useCases.SettingsUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -17,11 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val savedStateHandle: SavedStateHandle
+    private val settingsUseCases: SettingsUseCases
 ) : ViewModel() {
-
-    private val prefs = SettingsPreferences(context)
 
     private val _avatarUri = MutableStateFlow<Uri?>(null)
     val avatarUri: StateFlow<Uri?> = _avatarUri
@@ -43,60 +38,74 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            launch { prefs.avatarUriFlow.collectLatest { _avatarUri.value = it?.let(Uri::parse) } }
-            launch { prefs.usernameFlow.collectLatest { _username.value = it } }
-            launch { prefs.fogOpacityFlow.collectLatest { _fogOpacity.value = it } }
-            launch { prefs.showPOIFlow.collectLatest { _showPOI.value = it } }
-            launch { prefs.fogColorFlow.collectLatest { _fogColor.value = it } }
-            launch { prefs.notifyAchievementsFlow.collectLatest { _notifyAchievements.value = it } }
+            launch {
+                settingsUseCases.getAvatarUriFlow.invoke()
+                    .collectLatest { _avatarUri.value = it?.let(Uri::parse) }
+            }
+            launch {
+                settingsUseCases.getUsernameFlow.invoke().collectLatest { _username.value = it }
+            }
+            launch {
+                settingsUseCases.getFogOpacityFlow.invoke().collectLatest { _fogOpacity.value = it }
+            }
+            launch {
+                settingsUseCases.getShowPOIFlow.invoke().collectLatest { _showPOI.value = it }
+            }
+            launch {
+                settingsUseCases.getFogColorFlow.invoke().collectLatest { _fogColor.value = it }
+            }
+            launch {
+                settingsUseCases.getNotifyAchievementsFlow.invoke()
+                    .collectLatest { _notifyAchievements.value = it }
+            }
         }
     }
 
     fun setFogColor(color: Color) {
         _fogColor.value = color
         viewModelScope.launch {
-            prefs.saveFogColor(color)
+            settingsUseCases.saveFogColor.invoke(color)
         }
     }
 
     fun setNotifyAchievements(enabled: Boolean) {
         _notifyAchievements.value = enabled
         viewModelScope.launch {
-            prefs.saveNotifyAchievements(enabled)
+            settingsUseCases.saveNotifyAchievements.invoke(enabled)
         }
     }
 
     fun setAvatarUri(uri: Uri) {
         _avatarUri.value = uri
         viewModelScope.launch {
-            prefs.saveAvatarUri(uri.toString())
+            settingsUseCases.saveAvatarUri.invoke(uri.toString())
         }
     }
 
     fun setUsername(name: String) {
         _username.value = name
         viewModelScope.launch {
-            prefs.saveUsername(name)
+            settingsUseCases.saveUsername.invoke(name)
         }
     }
 
     fun setFogOpacity(value: Float) {
         _fogOpacity.value = value
         viewModelScope.launch {
-            prefs.saveFogOpacity(value)
+            settingsUseCases.saveFogOpacity.invoke(value)
         }
     }
 
     fun setShowPOI(show: Boolean) {
         _showPOI.value = show
         viewModelScope.launch {
-            prefs.saveShowPOI(show)
+            settingsUseCases.saveShowPOI.invoke(show)
         }
     }
 
     fun resetProgress() {
         viewModelScope.launch {
-            prefs.clearAll()
+            settingsUseCases.clearSettings.invoke()
             _avatarUri.value = null
             _username.value = ""
             _fogOpacity.value = 50f

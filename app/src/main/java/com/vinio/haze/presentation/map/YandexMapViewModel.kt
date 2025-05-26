@@ -11,11 +11,11 @@ import com.vinio.haze.application.useCases.FetchPoiUseCase
 import com.vinio.haze.application.useCases.GetCityByLocationUseCase
 import com.vinio.haze.application.useCases.GetUserProfileUseCase
 import com.vinio.haze.application.useCases.ProcessPoiItemUseCase
+import com.vinio.haze.application.useCases.SettingsUseCases
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.model.LocationPoint
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.domain.repository.LocationPointRepository
-import com.vinio.haze.presentation.screens.settingsScreen.SettingsPreferences
 import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.LinearRing
@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filterNotNull
@@ -38,7 +39,7 @@ class YandexMapViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val repository: LocationPointRepository,
     private val fetchPoiUseCase: FetchPoiUseCase,
-    private val settingsPreferences: SettingsPreferences,
+    private val settingsUseCases: SettingsUseCases,
     private val processPoiItemUseCase: ProcessPoiItemUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val getCityByLocationUseCase: GetCityByLocationUseCase,
@@ -80,9 +81,9 @@ class YandexMapViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            settingsPreferences.fogColorFlow.collect { color ->
-                Log.d("Color", "load color ${color.toArgb()}")
-                _fogColor.value = color
+            settingsUseCases.getFogColorFlow().collectLatest {
+                Log.d("Color", "load color ${it.toArgb()}")
+                _fogColor.value = it
             }
         }
     }
@@ -99,12 +100,12 @@ class YandexMapViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            settingsPreferences.fogOpacityFlow.collect {
+            settingsUseCases.getFogOpacityFlow().collectLatest {
                 _fogOpacity.value = it
             }
         }
         viewModelScope.launch {
-            settingsPreferences.showPOIFlow.collect {
+            settingsUseCases.getShowPOIFlow().collectLatest {
                 _showPOI.value = it
             }
         }

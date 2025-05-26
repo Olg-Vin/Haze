@@ -1,6 +1,8 @@
 package com.vinio.haze.diAndUtils
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.google.android.gms.location.LocationServices
 import com.vinio.haze.domain.adapter.AiRequest
 import com.vinio.haze.domain.adapter.MapRequest
@@ -8,14 +10,15 @@ import com.vinio.haze.domain.location.LocationClient
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.repository.LocationPointRepository
 import com.vinio.haze.domain.repository.PlaceRepository
+import com.vinio.haze.domain.repository.SettingsRepository
 import com.vinio.haze.infrastructure.adapter.AiRequestImpl
 import com.vinio.haze.infrastructure.adapter.MapRequestImpl
 import com.vinio.haze.infrastructure.db.dao.LocationPointDao
 import com.vinio.haze.infrastructure.db.dao.PlaceDao
 import com.vinio.haze.infrastructure.db.repository.LocationPointRepositoryImpl
 import com.vinio.haze.infrastructure.db.repository.PlaceRepositoryImpl
+import com.vinio.haze.infrastructure.db.repository.SettingsPreferencesImpl
 import com.vinio.haze.infrastructure.location.DefaultLocationClient
-import com.vinio.haze.presentation.screens.settingsScreen.SettingsPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -77,14 +80,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideSettingsPreferences(
-        @ApplicationContext context: Context
-    ): SettingsPreferences {
-        return SettingsPreferences(context)
-    }
-
-    @Provides
-    @Singleton
     fun provideMapRequest(
     ): MapRequest {
         return MapRequestImpl()
@@ -95,5 +90,12 @@ object AppModule {
     fun provideGeometryFactory(): GeometryFactory {
         return GeometryFactory()
     }
-}
 
+    @Provides
+    @Singleton
+    fun provideSettingsRepository(
+        dataStore: DataStore<Preferences>
+    ): SettingsRepository {
+        return SettingsPreferencesImpl(dataStore)
+    }
+}
