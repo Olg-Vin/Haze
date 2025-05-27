@@ -4,5 +4,5 @@ import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
 
 interface MapRequest {
-    suspend fun fetchPois(bbox: BoundingBox): List<Item>
+    suspend fun fetchPois(bbox: BoundingBox): Result<List<Item>>
 }

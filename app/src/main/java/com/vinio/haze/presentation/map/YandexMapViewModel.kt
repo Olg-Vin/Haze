@@ -1,5 +1,6 @@
 package com.vinio.haze.presentation.map
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -10,8 +11,11 @@ import androidx.lifecycle.viewModelScope
 import com.vinio.haze.application.useCases.FetchPoiUseCase
 import com.vinio.haze.application.useCases.GetCityByLocationUseCase
 import com.vinio.haze.application.useCases.GetUserProfileUseCase
+import com.vinio.haze.application.useCases.ObserveLocationEnabledUseCase
 import com.vinio.haze.application.useCases.ProcessPoiItemUseCase
 import com.vinio.haze.application.useCases.SettingsUseCases
+import com.vinio.haze.diAndUtils.LocationUtil
+import com.vinio.haze.diAndUtils.NetworkUtil
 import com.vinio.haze.domain.location.LocationRepository
 import com.vinio.haze.domain.model.LocationPoint
 import com.vinio.haze.domain.model.Place
@@ -21,6 +25,7 @@ import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.LinearRing
 import com.yandex.mapkit.geometry.Point
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,14 +33,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class YandexMapViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val locationRepository: LocationRepository,
     private val repository: LocationPointRepository,
     private val fetchPoiUseCase: FetchPoiUseCase,
@@ -43,6 +52,7 @@ class YandexMapViewModel @Inject constructor(
     private val processPoiItemUseCase: ProcessPoiItemUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val getCityByLocationUseCase: GetCityByLocationUseCase,
+    private val observeLocationEnabledUseCase: ObserveLocationEnabledUseCase,
 ) : ViewModel() {
 
     private val _poiItems = MutableStateFlow<List<Item>>(emptyList())
@@ -73,6 +83,9 @@ class YandexMapViewModel @Inject constructor(
 
     private val _fogColor = MutableStateFlow(Color(0xFF9575CD))
     val fogColor: StateFlow<Color> = _fogColor
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     fun loadLocationPoints() {
         viewModelScope.launch {
@@ -113,7 +126,10 @@ class YandexMapViewModel @Inject constructor(
         viewModelScope.launch {
             _boundingBoxFlow
                 .debounce(500)
-                .collect { bbox -> handlePoiSearch(bbox) }
+                .collect { bbox ->
+                    Log.d("Search", "handlePoiSearch запускается с bbox: $bbox")
+                    handlePoiSearch(bbox)
+                }
         }
 
         viewModelScope.launch {
@@ -128,30 +144,31 @@ class YandexMapViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            locationRepository.locationFlow
-                .filterNotNull()
-                .distinctUntilChangedBy { it.latitude to it.longitude }
-                .collect { loc ->
-                    val city = getCityByLocationUseCase.getCityName(loc.latitude, loc.longitude)
-                    _currentCity.value = city ?: "Неизвестно"
+            observeLocationEnabledUseCase.execute()
+                .collect { enabled ->
+                    Log.d("LocationReceiver", "Collected location enabled = $enabled")
+                    if (!enabled) {
+                        _errorMessage.value = "Геолокация отключена. Включите доступ к местоположению"
+                    } else {
+                        _errorMessage.value = null
+                    }
                 }
         }
 
         viewModelScope.launch {
-            try {
-                locationRepository.locationFlow
-                    .filterNotNull()
-                    .collect { location ->
-                        val point = Point(location.latitude, location.longitude)
-                        Log.d(
-                            "ViewModelDebug",
-                            "New user location: ${point.latitude}, ${point.longitude}"
-                        )
-                        _userLocation.value = point
-                    }
-            } catch (e: Exception) {
-                Log.e("ViewModelDebug", "Location collect failed: ${e.message}", e)
-            }
+            observeLocationEnabledUseCase.execute()
+                .filter { it }
+                .flatMapLatest {
+                    locationRepository.locationFlow
+                        .filterNotNull()
+                        .distinctUntilChangedBy { it.latitude to it.longitude }
+                }
+                .collect { location ->
+                    val point = Point(location.latitude, location.longitude)
+                    _userLocation.value = point
+                    val city = getCityByLocationUseCase.getCityName(point.latitude, point.longitude)
+                    _currentCity.value = city ?: "Неизвестно"
+                }
         }
     }
 
@@ -163,6 +180,12 @@ class YandexMapViewModel @Inject constructor(
     }
 
     private suspend fun handlePoiSearch(bbox: BoundingBox) {
+        if (!NetworkUtil.isNetworkAvailable(context)) {
+            Log.e("POI", "Нет подключения к интернету")
+            _errorMessage.value = "Нет подключения к интернету"
+            return
+        }
+
         val key = bbox.key()
         if (searchCache.containsKey(key)) {
             _poiItems.value = searchCache[key]!!
@@ -174,7 +197,8 @@ class YandexMapViewModel @Inject constructor(
             searchCache[key] = items
             _poiItems.value = items
         }.onFailure { e ->
-            Log.e("POI", "Failed to fetch POI: ${e.message}", e)
+            Log.e("POI", "Ошибка получения POI: ${e.message}", e)
+            _errorMessage.value = "Ошибка загрузки POI: ${e.message}"
         }
     }
 

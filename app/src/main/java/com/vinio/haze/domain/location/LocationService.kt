@@ -29,8 +29,6 @@ class LocationService : Service() {
     @Inject
     lateinit var locationRepository: LocationRepository
 
-    private var lastLocation: Location? = null
-
     override fun onBind(p0: Intent?): IBinder? {
         return null
     }

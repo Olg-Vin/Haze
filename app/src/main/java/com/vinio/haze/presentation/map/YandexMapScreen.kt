@@ -316,9 +316,7 @@ fun YandexMapScreen(
             val polygons = locationPoints.map { point ->
                 makeSquarePolygon(Point(point.cellLat, point.cellLon), geometryFactory)
             }
-
             val union = CascadedPolygonUnion.union(polygons)
-
             visibleAreas.clear()
             visibleAreaVersion.intValue++
             when (union) {
@@ -336,7 +334,6 @@ fun YandexMapScreen(
                     }
                 }
             }
-
             applyFogColor(fogPolygonObj, fogColor, fogOpacity)
             Log.d("Color", "load with opacity color ${fogPolygonObj?.fillColor}")
 
@@ -347,28 +344,31 @@ fun YandexMapScreen(
         }
     }
 
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(key1 = errorMessage) {
+        errorMessage?.let {
+            Log.d("Error", "LaunchedEffect запущен с ошибкой: $it")
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
+
     LaunchedEffect(poiItems, zoom, showPOI, visibleAreaVersion.value) {
         poiCollection.clear()
-
         if (!showPOI) return@LaunchedEffect
-
         val placemarkCollection = poiCollection.addCollection()
-
         val scale = when {
             zoom >= 17 -> 1.0f
             zoom >= 15 -> 0.8f
             zoom >= 13 -> 0.6f
             else -> 0.4f
         }
-
         poiItems.forEach { item ->
             viewModel.processPoiItem(item, visibleAreas) { place, point ->
-                val placemark = placemarkCollection.addPlacemark().apply {
+                placemarkCollection.addPlacemark().apply {
                     geometry = point
                     userData = place
-                    setIcon(
-                        ImageProvider.fromResource(
-                            context,
+                    setIcon(ImageProvider.fromResource(context,
                             if (place != null) R.drawable.ic_marker else R.drawable.ic_marker_gray
                         )
                     )
@@ -381,7 +381,6 @@ fun YandexMapScreen(
                 }
             }
         }
-
         placemarkCollection.addTapListener { mapObject, _ ->
             val tappedPlace = mapObject.userData as? Place ?: return@addTapListener false
             Toast.makeText(context, tappedPlace.name, Toast.LENGTH_SHORT).show()

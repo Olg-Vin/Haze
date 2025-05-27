@@ -29,44 +29,32 @@ class DefaultLocationClient(
 
     @SuppressLint("MissingPermission")
     override fun getLocationUpdates(intervalMs: Long): Flow<Location> = callbackFlow {
-        // Проверка разрешений: ACCESS_FINE_LOCATION (и по необходимости ACCESS_BACKGROUND_LOCATION)
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            throw LocationClient.LocationException("Нет разрешения на геолокацию")
+            throw LocationClient.LocationException("No permission for geolocation")
         }
-        // (По условиям: если нужны фоновые обновления, следует запросить ACCESS_BACKGROUND_LOCATION:contentReference[oaicite:1]{index=1} или использовать Foreground Service)
-
-        // Настраиваем LocationRequest с интервалом intervalMs и высокой точностью
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
-            // Fastest interval (минимальный период между обновлениями) – равный desired-interval
             .setMinUpdateIntervalMillis(intervalMs)
-            // Без батчинга: доставка каждого обновления сразу
             .setMaxUpdateDelayMillis(0L)
-            // Обновлять даже без перемещения устройства
-            .setMinUpdateDistanceMeters(0F)
+            .setMinUpdateDistanceMeters(5F)
             .build()
 
-        // Колбэк для приёма обновлений
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 super.onLocationResult(result)
                 val location = result.lastLocation ?: return
-//                Log.d(TAG, "onLocationResult: location=$location")
-                // Отправляем координаты в поток
                 trySend(location)
             }
         }
 
         Log.d(TAG, "requestLocationUpdates(intervalMs=$intervalMs)")
-        // Запрашиваем обновления (Looper может быть null, тогда используется поток вызова)
         fusedLocationClient.requestLocationUpdates(
             request,
             locationCallback,
             Looper.getMainLooper()
         )
 
-        // Корректно отписываемся при закрытии потока
         awaitClose {
             Log.d(TAG, "awaitClose: removeLocationUpdates")
             fusedLocationClient.removeLocationUpdates(locationCallback)

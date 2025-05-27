@@ -25,8 +25,8 @@ class ProcessPoiItemUseCase @Inject constructor(
         val jtsPoint = geometryFactory.createPoint(Coordinate(point.longitude, point.latitude))
 
         val isInVisibleArea = visibleRings.any { ring ->
-            val polygon = toJtsPolygon(ring.points) // это JTS Polygon
-            polygon.contains(jtsPoint) // всё JTS, всё совместимо
+            val polygon = toJtsPolygon(ring.points)
+            polygon.contains(jtsPoint)
         }
 
         if (!isInVisibleArea) return null
@@ -69,7 +69,6 @@ class ProcessPoiItemUseCase @Inject constructor(
             Coordinate(it.longitude, it.latitude)
         }.toTypedArray()
 
-        // Ensure closed ring (first point = last)
         val closed = if (coordinates.first() != coordinates.last()) {
             coordinates + coordinates.first()
         } else coordinates

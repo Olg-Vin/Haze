@@ -1,10 +1,13 @@
 package com.vinio.haze.application.useCases
 
+import android.util.Log
 import com.vinio.haze.domain.adapter.MapRequest
+import com.vinio.haze.domain.exceptions.AppError
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.domain.repository.PlaceRepository
 import com.yandex.mapkit.GeoObjectCollection.Item
 import com.yandex.mapkit.geometry.BoundingBox
+import kotlinx.io.IOException
 import javax.inject.Inject
 
 class FetchPoiUseCase @Inject constructor(
@@ -13,12 +16,7 @@ class FetchPoiUseCase @Inject constructor(
 ) {
 
     suspend fun execute(bbox: BoundingBox): Result<List<Item>> {
-        return try {
-            val pois = mapRequest.fetchPois(bbox)
-            Result.success(pois)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return mapRequest.fetchPois(bbox)
     }
 
     suspend fun savePlaceIfNotExists(place: Place) {

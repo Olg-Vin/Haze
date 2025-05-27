@@ -64,7 +64,6 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
         if (locationGranted) {
             onPermissionsGranted()
         } else {
-            // Check if we can ask again
             val showRationale =
                 ActivityCompat.shouldShowRequestPermissionRationale(
                     activity ?: return@rememberLauncherForActivityResult,

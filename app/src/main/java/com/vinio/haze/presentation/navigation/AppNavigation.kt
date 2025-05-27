@@ -54,10 +54,8 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = Screen.Check.route,
-//            startDestination = BottomNavItem.Settings.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Экраны без BottomNav
             composable(
                 route = Screen.Check.route
             ) {
@@ -86,14 +84,12 @@ fun AppNavigation() {
                     }
                 )
             }
-
             composable(
                 route = Screen.Map.route
             ) {
                 YandexMapScreen(navController = navController)
             }
 
-            // Экраны BottomNav
             composable(
                 route = BottomNavItem.CityList.route,
                 enterTransition = {
@@ -214,7 +210,6 @@ fun AppNavigation() {
                 SettingsScreen()
             }
 
-            // Детали
             composable(
                 route = "poiDetails/{poiId}?isCity={isCity}",
                 arguments = listOf(
@@ -289,7 +284,8 @@ fun AppNavigation() {
                     ) + fadeOut()
                 }
             ) { backStackEntry ->
-                val cityName = backStackEntry.arguments?.getString("cityName") ?: return@composable
+                val cityName = backStackEntry.arguments?.getString("cityName")
+                    ?: return@composable
 
                 CityDetailsScreen(
                     cityName = cityName,

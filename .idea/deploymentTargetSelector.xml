@@ -10,7 +10,7 @@
       </SelectionState>
       <SelectionState runConfigName="MainActivity (1)">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-05-26T00:06:29.463826600Z">
+        <DropdownSelection timestamp="2025-05-26T12:47:46.163480500Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Vinio\.android\avd\Pixel_9_Pro_2.avd" />
