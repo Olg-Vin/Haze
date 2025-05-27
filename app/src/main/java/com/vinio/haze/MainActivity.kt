@@ -39,31 +39,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun Activity.startLocation() {
-    Log.d("Location","Start location intent")
-    Intent(
-        applicationContext,
-        LocationService::class.java
-    ).apply {
-        action = LocationService.ACTION_START
-        startService(this)
-    }
-}
-
-fun Activity.stopLocation() {
-    Log.d("Location","Stop location intent")
-    Intent(
-        applicationContext,
-        LocationService::class.java
-    ).apply {
-        action = LocationService.ACTION_STOP
-        startService(this)
-    }
-}
-
-fun Activity.openAppSettings() {
-    Intent(
-        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-        Uri.fromParts("package", packageName, null)
-    ).also(::startActivity)
-}

@@ -52,10 +52,10 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.vinio.haze.R
 import com.vinio.haze.diAndUtils.GeometryFactoryEntryPoint
+import com.vinio.haze.diAndUtils.startLocation
 import com.vinio.haze.domain.model.Place
 import com.vinio.haze.presentation.map.InfoDialog.PoiInfoDialog
 import com.vinio.haze.presentation.screens.BottomNavItem
-import com.vinio.haze.startLocation
 import com.yandex.mapkit.Animation
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.LinearRing

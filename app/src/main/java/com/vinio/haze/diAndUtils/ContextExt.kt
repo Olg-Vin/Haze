@@ -1,13 +1,16 @@
 package com.vinio.haze.diAndUtils
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.core.content.ContextCompat
+import com.vinio.haze.domain.location.LocationService
 
 fun Context.hasLocationPermission(): Boolean {
     val backgroundPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -40,12 +43,25 @@ fun Context.hasNotificationPermission(): Boolean {
     return true
 }
 
-fun Context.openAppSettings() {
-    val intent = Intent(
-        Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+
+fun Activity.startLocation() {
+    Log.d("Location","Start location intent")
+    Intent(
+        applicationContext,
+        LocationService::class.java
     ).apply {
-        data = Uri.fromParts("package", packageName, null)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        action = LocationService.ACTION_START
+        startService(this)
     }
-    startActivity(intent)
+}
+
+fun Activity.stopLocation() {
+    Log.d("Location","Stop location intent")
+    Intent(
+        applicationContext,
+        LocationService::class.java
+    ).apply {
+        action = LocationService.ACTION_STOP
+        startService(this)
+    }
 }

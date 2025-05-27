@@ -2,11 +2,15 @@ package com.vinio.haze.presentation.startScreen
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,9 +22,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -37,45 +44,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.vinio.haze.R
-import com.vinio.haze.diAndUtils.openAppSettings
 
 @Composable
 fun StartScreen(onPermissionsGranted: () -> Unit) {
     var showInfoPopup by remember { mutableStateOf(false) }
     var showSecondAttemptDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showBackgroundPermissionDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val activity = context as? Activity
 
-    val permissionList = buildList {
+    // Foreground permissions: точное местоположение и уведомления
+    val foregroundPermissions = buildList {
         add(Manifest.permission.ACCESS_FINE_LOCATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             add(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
-//  TODO  добавити уведомления как обязательное разрешение
-    val permissionsLauncher = rememberLauncherForActivityResult(
+
+    // Background permission (Android 10+)
+    val backgroundPermission =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION else null
+
+    var foregroundGranted by remember { mutableStateOf(false) }
+    var backgroundGranted by remember { mutableStateOf(false) }
+    var backgroundRequested by remember { mutableStateOf(false) }
+
+    // Запуск запроса foreground разрешений
+    val foregroundLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val locationGranted =
-            permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
-
+        val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
         if (locationGranted) {
-            onPermissionsGranted()
+            foregroundGranted = true
         } else {
-            val showRationale =
-                ActivityCompat.shouldShowRequestPermissionRationale(
-                    activity ?: return@rememberLauncherForActivityResult,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
+            val showRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                activity ?: return@rememberLauncherForActivityResult,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
             if (showRationale) {
                 showSecondAttemptDialog = true
             } else {
                 showSettingsDialog = true
             }
         }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
             Toast.makeText(
@@ -87,58 +101,97 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
         }
     }
 
+    // Запуск запроса background разрешения
+    val backgroundLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            backgroundGranted = true
+            Toast.makeText(context, "Фоновая геолокация разрешена", Toast.LENGTH_SHORT).show()
+            onPermissionsGranted()
+        } else {
+            showSettingsDialog = true
+        }
+    }
+
+    // Когда foreground разрешение получено, запрашиваем background (после подтверждения диалогом)
+    LaunchedEffect(foregroundGranted, backgroundRequested) {
+        if (foregroundGranted && !backgroundGranted && !backgroundRequested && backgroundPermission != null) {
+            showBackgroundPermissionDialog = true
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
+                painter = painterResource(id = R.drawable.start_img),
                 contentDescription = "Sample Image",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 16f)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(16.dp))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Box(
+            Text(
+                text = "Haze",
+                fontWeight = FontWeight.Medium,
+                fontSize = 28.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Описание приложения
+            Text(
+                text = "Если вы любите погулять пешком\nи исходили уже весь свой город – это приложение для вас!\n" +
+                        "Время открыть для себя родные края заново",
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Сиреневая кнопка через цвета Material
+            Button(
+                onClick = {
+                    if (!foregroundGranted) {
+                        showInfoPopup = true // Показать информационный диалог, не запрашивать разрешения сразу
+                    } else if (!backgroundGranted && backgroundPermission != null) {
+                        showBackgroundPermissionDialog = true
+                    } else {
+                        onPermissionsGranted()
+                    }
+                },
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFD1C4E9)
+                )
             ) {
                 Text(
-                    text = "Это приложение позволит вам оценить свой прогресс исследования мира!",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
+                    text = "Начнём!",
+                    fontSize = 22.sp,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
-            Button(
-                onClick = { showInfoPopup = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
-                Text(text = "Начнём!")
-            }
-
-            PermissionsInfoPopup(
-                showDialog = showInfoPopup,
-                onDismiss = { showInfoPopup = false },
-                onOkClick = {
-                    permissionsLauncher.launch(permissionList.toTypedArray())
-                    showInfoPopup = false
-                }
-            )
-
-            // Диалог для повторного запроса
+            // Диалог повторного запроса
             if (showSecondAttemptDialog) {
                 AlertDialog(
                     onDismissRequest = { showSecondAttemptDialog = false },
@@ -147,7 +200,7 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
                     confirmButton = {
                         Button(onClick = {
                             showSecondAttemptDialog = false
-                            permissionsLauncher.launch(permissionList.toTypedArray())
+                            foregroundLauncher.launch(foregroundPermissions.toTypedArray())
                         }) {
                             Text("Повторить")
                         }
@@ -160,7 +213,7 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
                 )
             }
 
-            // Диалог с переходом в настройки
+            // Диалог с переходом в настройки (для отказавших)
             if (showSettingsDialog) {
                 AlertDialog(
                     onDismissRequest = { showSettingsDialog = false },
@@ -183,6 +236,51 @@ fun StartScreen(onPermissionsGranted: () -> Unit) {
                     }
                 )
             }
+
+            // Диалог с объяснением необходимости фонового разрешения
+            if (showBackgroundPermissionDialog) {
+                AlertDialog(
+                    onDismissRequest = { showBackgroundPermissionDialog = false },
+                    title = { Text("Разрешение на геолокацию в фоне") },
+                    text = {
+                        Text("Для корректной работы приложения в фоне необходимо разрешить доступ к геолокации всегда. Пожалуйста, предоставьте это разрешение.")
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            showBackgroundPermissionDialog = false
+                            backgroundRequested = true
+                            backgroundLauncher.launch(backgroundPermission!!)
+                        }) {
+                            Text("Разрешить")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showBackgroundPermissionDialog = false }) {
+                            Text("Отмена")
+                        }
+                    }
+                )
+            }
         }
     }
+    if (showInfoPopup) {
+        PermissionsInfoPopup(
+            showDialog = showInfoPopup,
+            onDismiss = { showInfoPopup = false },
+            onOkClick = {
+                showInfoPopup = false
+                foregroundLauncher.launch(foregroundPermissions.toTypedArray())
+            }
+        )
+    }
+}
+
+// Вспомогательная функция открытия настроек
+fun Activity.openAppSettings() {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", packageName, null)
+    )
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    startActivity(intent)
 }
